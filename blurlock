@@ -3,6 +3,11 @@
 # Now works with sway too. Also increased the blur.
 # Original script: https://gitlab.manjaro.org/packages/community/i3/i3exit
 
+if ! command -v import > /dev/null; then
+	echo "imagemagick must be installed" >&2
+	exit 1
+fi
+
 # sway sets a "SWAYSOCK" variable, so just use that to detect sway
 if [ -n "$SWAYSOCK" ]; then
 	if ! command -v swaylock > /dev/null; then
