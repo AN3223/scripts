@@ -1,6 +1,7 @@
 #!/bin/sh
 # manjaro-i3 script for blurring the screen and locking it
 # Now works with sway too. Also increased the blur.
+# Original script: https://gitlab.manjaro.org/packages/community/i3/i3exit
 
 # sway sets a "SWAYSOCK" variable, so just use that to detect sway
 if [ -n "$SWAYSOCK" ]; then
