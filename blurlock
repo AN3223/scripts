@@ -29,8 +29,14 @@ else
 	import -window root /tmp/screenshot.png
 fi
 
-# blur it
-convert /tmp/screenshot.png -blur 0x10 /tmp/screenshotblur.png
+# blur it with ffmpeg if available, otherwise use imagemagick
+if command -v ffmpeg > /dev/null; then
+	ffmpeg -y -i /tmp/screenshot.png \
+		-filter_complex "boxblur=10" -vframes 1 \
+		/tmp/screenshotblur.png &> /dev/null
+else
+	convert /tmp/screenshot.png -blur 0x10 /tmp/screenshotblur.png
+fi
 rm /tmp/screenshot.png
 
 # lock the screen
