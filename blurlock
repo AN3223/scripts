@@ -3,13 +3,8 @@
 # Now works with sway too. Also increased the blur.
 # Original script: https://gitlab.manjaro.org/packages/community/i3/i3exit
 
-if ! command -v import > /dev/null; then
-	echo "imagemagick must be installed" >&2
-	exit 1
-fi
-
 # sway sets a "SWAYSOCK" variable, so just use that to detect sway
-if [ -n "$SWAYSOCK" ]; then
+if [ "$SWAYSOCK" ]; then
 	if ! command -v swaylock > /dev/null; then
 		echo "swaylock must be installed" >&2
 		exit 1
@@ -18,22 +13,37 @@ if [ -n "$SWAYSOCK" ]; then
 		exit 1
 	fi
 	locker=swaylock
+	sway=true
 else
 	locker=i3lock
+	i3=true
+fi
+
+# use ffmpeg if installed
+if command -v ffmpeg > /dev/null; then
+	use_ffmpeg=true
+fi
+
+# imagemagick is only required for i3, or if ffmpeg is not installed
+if ! command -v import > /dev/null; then
+	if [ "$i3" ] || [ ! "$use_ffmpeg" ]; then
+		echo "imagemagick must be installed" >&2
+		exit 1
+	fi
 fi
 
 # take screenshot
-if [ -n "$SWAYSOCK" ]; then
+if [ "$sway" ]; then
 	grim /tmp/screenshot.png
 else
 	import -window root /tmp/screenshot.png
 fi
 
-# blur it with ffmpeg if available, otherwise use imagemagick
-if command -v ffmpeg > /dev/null; then
-	ffmpeg --fatal -y -i /tmp/screenshot.png \
+# blur it
+if [ "$use_ffmpeg" ]; then
+	ffmpeg -loglevel fatal -y -i /tmp/screenshot.png \
 		-filter_complex "boxblur=10" -vframes 1 \
-		/tmp/screenshotblur.png &> /dev/null
+		/tmp/screenshotblur.png
 else
 	convert /tmp/screenshot.png -blur 0x10 /tmp/screenshotblur.png
 fi
