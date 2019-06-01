@@ -1,0 +1,14 @@
+#!/bin/sh
+# Takes a username argument and begins watching a Twitch stream for that username
+# Prefers VLC but will fall back to MPV
+
+url="https://twitch.tv/$1"
+
+if command -v vlc; then
+	vlc $url
+elif command -v mpv; then
+	mpv $url
+else
+	echo "Either VLC or MPV need to be installed" >&2
+	exit 1
+fi

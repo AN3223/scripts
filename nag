@@ -1,0 +1,13 @@
+#!/bin/sh
+# nag <time> <message> [command]
+# Will nag you repeatedly, sending <message> every <time> interval.
+# Takes an optional 3rd argument that will be executed after the notification (beep maybe?)
+
+set -e
+
+while true; do
+	sleep "$1"
+	notify-send "$2"
+	$3
+done
+

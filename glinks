@@ -1,0 +1,23 @@
+#!/bin/sh
+# Starts up Links in graphical mode with some nice colors
+
+# Starts up Links inside of firejail if firejail is installed
+if command -v firejail; then
+	fj=firejail
+else
+	fj=""
+fi
+
+# For compatibility with Arch/Arch-based distros
+if command -v xlinks; then
+	browser=xlinks
+else
+	browser=links
+fi
+
+WHITISH=0xD3D0D0
+LIGHTBLUE=0x3679FF
+BLACKISH=0x090909
+
+$fj $browser -g -html-g-text-color $WHITISH -html-g-link-color $LIGHTBLUE -html-g-background-color $BLACKISH $@
+

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Kills all windows (gracefully) in the current active workspace
+
+# Get the current desktop from wmctrl
+current_desktop=$(wmctrl -d | awk '$2 == "*" {print $1}')
+
+# Kill all of the windows within the current desktop via wmctrl
+wmctrl -l | awk -v cd="$current_desktop" \
+	'$2 == cd {system("wmctrl -ic "$1)}'
+
+

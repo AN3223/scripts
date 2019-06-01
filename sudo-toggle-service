@@ -1,0 +1,4 @@
+#!/bin/sh
+# sudo-toggle-service <service>
+
+sudo systemctl is-active $1 && sudo systemctl stop $1 || sudo systemctl start $1
