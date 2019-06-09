@@ -4,9 +4,9 @@
 
 url="https://twitch.tv/$1"
 
-if command -v vlc; then
+if command -v mpv; then
 	vlc $url
-elif command -v mpv; then
+elif command -v vlc; then
 	mpv $url
 else
 	echo "Either VLC or MPV need to be installed" >&2
