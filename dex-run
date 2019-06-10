@@ -1,26 +1,82 @@
 #!/bin/sh
-# Searches for a desktop file and runs it with dex
 
+usage() {
+	printf "\ndex-run [OPTIONS] APPLICATIONS
+INFO:
+	This script searches for a desktop file by filename and runs it with dex
+
+OPTIONS:
+	-i
+		Case insensitive application search
+	-c
+		If there are multiple search results, exit with code 2 and print
+		the results to stderr
+	-e
+		Look for an exact match for the application search
+	-h
+		Shows this message
+"
+}
+
+while getopts "iceh" o; do
+	case "$o" in
+		i)
+			case_insensitive=1
+			;;
+		c)
+			choice=1
+			;;
+		e)
+			exact=1
+			;;
+		h | *)
+			usage
+			;;
+	esac
+done
+shift $((OPTIND-1))
+
+# Gets XDG_DATA_HOME or defaults to $HOME/.local/share/
 [ "$XDG_DATA_HOME" ] && data_home="$XDG_DATA_HOME" || data_home="$HOME/.local/share/"
 
+# Gets XDG_DATA_DIRS and appends $XDG_DATA_HOME (or defaults to /usr/local/share/:/usr/share/)
 if [ "$XDG_DATA_DIRS" ]; then
 	bdirs="$XDG_DATA_DIRS:$data_home"
 else
 	bdirs="/usr/local/share/:/usr/share/:$data_home"
 fi
 
+# Iterate over the dirs in $XDG_DATA_DIRS:$XDG_DATA_HOME and appends "/applications/" to each dir
 set -o noglob; IFS_="$IFS"; IFS=:
 for bdir in $bdirs""; do
 	dirs="$dirs $bdir/applications/"
 done
 set +o noglob; IFS="$IFS_"
 
-echo "$dirs"
+# Implements arguments for customizing the query
+[ "$case_insensitive" ] && name="-iname" || name="-name"
+[ "$exact" ] && q="$1" || q=*"$1"*
 
-results=$(find $dirs -maxdepth 1 -iname "*${1}*")
+# Do the query (suppresses stderr because find is noisy)
+results=$(find $dirs -maxdepth 1 $name "$q" 2> /dev/null)
 
-# Runs the first result, regardless of how many other results there are
-# TODO: Maybe return all of the paths through stderr & exit if there is more than one desktop file?
+# Throw an error when there are no results
+if [ ! "$results" ]; then
+	echo "No application found" >&2
+	exit 1
+fi
+
+# Grabs the first result, regardless of how many other results there are
 result=$(printf $results | head -n 1)
+
+# Implements -c
+if [ "$choice" ]; then
+	if [ ! "$result" = "$results" ]; then
+		printf "$results" >&2
+		exit 2
+	fi
+fi
+
+# Finally, execute the application with dex
 dex "$result"
 
