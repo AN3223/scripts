@@ -4,6 +4,7 @@
 # Pretty much re-written by Mina Nagy (mnzaki)
 # Edited by Chrysostomus to create/source .dmenurc
 # Edited by AN3223 to optionally use $DMENU to use an alternative dmenu program.
+# Find the original script here: https://gitlab.manjaro.org/packages/community/dmenu-manjaro/blob/master/dmenu_recency
 
 if ! [ -f "$HOME/.dmenurc" ]; then
 	cp /usr/share/dmenu/dmenurc $HOME/.dmenurc
