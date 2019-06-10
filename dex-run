@@ -1,0 +1,11 @@
+#!/bin/sh
+# Searches for a desktop file and runs it with dex
+
+# TODO: Isn't there some kind of XDG_ variable for this?
+results=$(find "$HOME/.local/share/applications/" "/usr/share/applications/" -iname "*${1}*")
+
+# Runs the first result, regardless of how many other results there are
+# TODO: Maybe return all of the paths through stderr & exit if there is more than one desktop file?
+result=$(printf $results | head -n 1)
+dex "$result"
+
