@@ -1,8 +1,23 @@
 #!/bin/sh
 # Searches for a desktop file and runs it with dex
 
-# TODO: Isn't there some kind of XDG_ variable for this?
-results=$(find "$HOME/.local/share/applications/" "/usr/share/applications/" -iname "*${1}*")
+[ "$XDG_DATA_HOME" ] && data_home="$XDG_DATA_HOME" || data_home="$HOME/.local/share/"
+
+if [ "$XDG_DATA_DIRS" ]; then
+	bdirs="$XDG_DATA_DIRS:$data_home"
+else
+	bdirs="/usr/local/share/:/usr/share/:$data_home"
+fi
+
+set -o noglob; IFS_="$IFS"; IFS=:
+for bdir in $bdirs""; do
+	dirs="$dirs $bdir/applications/"
+done
+set +o noglob; IFS="$IFS_"
+
+echo "$dirs"
+
+results=$(find $dirs -maxdepth 1 -iname "*${1}*")
 
 # Runs the first result, regardless of how many other results there are
 # TODO: Maybe return all of the paths through stderr & exit if there is more than one desktop file?
