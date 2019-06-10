@@ -1,7 +1,7 @@
 #!/bin/sh
 
 usage() {
-	printf "\ndex-run [OPTIONS] APPLICATIONS
+	printf "\ndex-run [OPTIONS] APPLICATIONS [DEX ARGUMENTS]
 INFO:
 	This script searches for a desktop file by filename and runs it with dex
 
@@ -79,5 +79,6 @@ if [ "$choice" ]; then
 fi
 
 # Finally, execute the application with dex
-dex "$result"
+shift $((OPTIND-1))
+dex "$result" $@
 
