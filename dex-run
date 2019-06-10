@@ -16,6 +16,7 @@ OPTIONS:
 	-h
 		Shows this message
 "
+	exit 1
 }
 
 while getopts "iceh" o; do
@@ -31,7 +32,6 @@ while getopts "iceh" o; do
 			;;
 		h | *)
 			usage
-			exit 1
 			;;
 	esac
 done
