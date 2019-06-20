@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# This script takes a URL argument to a Youtube channel/playlist and returns
+# This script takes a URL argument to a YouTube channel/playlist and returns
 # a link to the corresponding RSS feed.
 
 from urllib.parse import urlparse
