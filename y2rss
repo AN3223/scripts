@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# This script takes a URL argument to a Youtube channel/playlist and returns
+# a link to the corresponding RSS feed.
+
+from urllib.parse import urlparse
+from sys import argv
+
+# URLs:
+# https://youtube.com/user/tuxreviews/videos
+# https://youtube.com/channel/UC5UAwBUum7CPN5buc-_N1Fw
+# https://youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG
+
+# RSS counterparts:
+# https://youtube.com/feeds/videos.xml?channel_id=UC5UAwBUum7CPN5buc-_N1Fw
+# https://youtube.com/feeds/videos.xml?user=tuxreviews
+# https://youtube.com/feeds/videos.xml?playlist_id=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG
+
+url = argv[1]
+parsed = urlparse(url)
+path = [x for x in parsed.path.split('/') if x]
+
+if path[0] == 'user':
+    id = path[1]
+    rss = f"https://youtube.com/feeds/videos.xml?user={id}"
+elif path[0] == 'channel':
+    id = path[1]
+    rss = f"https://youtube.com/feeds/videos.xml?channel_id={id}"
+elif path[0] == 'playlist':
+    id = parsed.query.lstrip('list=')
+    rss = f"https://youtube.com/feeds/videos.xml?playlist_id={id}"
+else:
+    raise ValueError('Invalid URL')
+
+print(rss)
