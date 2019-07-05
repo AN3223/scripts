@@ -2,7 +2,7 @@
 # Starts up Links in graphical mode with some nice colors
 
 # For compatibility with Arch/Arch-based distros
-if command -v xlinks; then
+if command -v xlinks > /dev/null; then
 	links=xlinks
 else
 	links=links
