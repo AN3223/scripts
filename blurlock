@@ -49,10 +49,10 @@ fi
 # blur it
 if [ "$use_ffmpeg" ]; then
 	ffmpeg -loglevel fatal -y -i /tmp/screenshot.png \
-		-filter_complex "boxblur=10" -vframes 1 \
+		-filter_complex "boxblur=20" -vframes 1 \
 		/tmp/screenshotblur.png
 else
-	convert /tmp/screenshot.png -blur 0x10 /tmp/screenshotblur.png
+	convert /tmp/screenshot.png -blur 0x20 /tmp/screenshotblur.png
 fi
 rm /tmp/screenshot.png
 
