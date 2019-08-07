@@ -1,0 +1,12 @@
+#!/bin/sh
+# Simply starts a tmux session pre-populated with empty shell windows
+
+tmux start-server
+tmux new-session -d -s pmux
+
+for n in $(seq 2 10); do
+	tmux new-window -ad -t pmux:$n
+done
+
+tmux attach-session -t pmux
+
