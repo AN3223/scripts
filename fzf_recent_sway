@@ -1,0 +1,4 @@
+#!/bin/sh
+# Just passes the output to sway
+
+fzf_recent | xargs -0 swaymsg exec

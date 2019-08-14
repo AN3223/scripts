@@ -1,0 +1,47 @@
+#!/bin/bash
+# This script is inspired by dmenu_recency. You must set the $TERMCMD environment variable,
+# which should be something like "xterm -e", so applications may be launched in your terminal of choice.
+
+# This script doesn't execute commands, instead they're just printed to stdout.
+
+if [[ ! "$TERMCMD" ]]; then
+	echo 'ERROR: You must set the $TERMCMD to execute commands in a new terminal instance, i.e. "xterm -e"' >&2
+	exit 1
+fi
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/fzf-recent"
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fzf-recent"
+mkdir -p "$cache_dir" "$config_dir"
+
+filter_commands() {
+	awk 'length($0) > 1' | # Filter out single character commands
+	awk '!seen[$0]++' # Remove duplicates
+}
+
+[[ ! -f "$cache_dir/all" ]] && compgen -c > "$cache_dir/all"
+touch "$cache_dir/recent" "$cache_dir/all"
+selection=$(cat "$cache_dir/recent" "$cache_dir/all" | filter_commands | fzf)
+
+if [[ ! "$selection" ]]; then
+	echo "ERROR: Nothing has been selected!" >&2; exit 1;
+fi
+
+printf '%s\n' "$selection" >> "$cache_dir/recent"
+
+touch "$config_dir/background" "$config_dir/terminal"
+if grep -Fxq "$selection" "$config_dir/background"; then
+	printf '%s\n' "$selection"
+elif grep -Fxq "$selection" "$config_dir/terminal"; then
+	printf '%s\n' "$TERMCMD $selection"
+else
+	echo "Run program in the background (enter 1) or in the terminal (enter 2)?" >&2
+	read choice
+	
+	if [[ "$choice" = 1 ]]; then
+		printf '%s\n' "$selection" | tee "$config_dir/background"
+	else
+		printf '%s\n' "$selection" > "$config_dir/terminal"
+		printf '%s\n' "$TERMCMD $selection"
+	fi
+fi
+
