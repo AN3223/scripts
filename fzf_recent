@@ -1,27 +1,32 @@
 #!/bin/bash
 # This script is inspired by dmenu_recency. You must set the $TERMCMD environment variable,
-# which should be something like "xterm -e", so applications may be launched in your terminal of choice.
+# which should be something like "xterm -e", so applications may be launched in your
+# terminal of choice.
 
 # This script doesn't execute commands, instead they're just printed to stdout.
 
 err() { echo "ERROR: $1" >&2; exit 1; }
 
-[[ ! "$TERMCMD" ]] && err 'You must set $TERMCMD to execute commands in a terminal, i.e. "xterm -e"'
+[[ ! "$TERMCMD" ]] && err 'You must set $TERMCMD to run commands in a terminal, i.e. "xterm -e"'
 
+# Find the cache/config directories and ensure they exist
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/fzf-recent"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fzf-recent"
 mkdir -p "$cache_dir" "$config_dir"
 
+# Ensure all of the config/cache files exist
 [[ ! -f "$cache_dir/all" ]] && compgen -c > "$cache_dir/all"
 touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
-# Filters out duplicates
+# Filters out duplicates and pass the commands to fzf
 selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
 
+# Ensure the selection exists, and append it to the recent commands
 [[ ! "$selection" ]] && err 'Nothing has been selected!'
-
 printf '%s\n' "$selection" >> "$cache_dir/recent"
 
+# If the command has been ran before, run it with the same config,
+# otherwise prompt the user for how the command should be run.
 if grep -Fxq "$selection" "$config_dir/background"; then
 	printf '%s\n' "$selection"
 elif grep -Fxq "$selection" "$config_dir/terminal"; then
