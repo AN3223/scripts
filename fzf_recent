@@ -15,8 +15,8 @@ mkdir -p "$cache_dir" "$config_dir"
 [[ ! -f "$cache_dir/all" ]] && compgen -c > "$cache_dir/all"
 touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
-# Filters out single letter commands & duplicates
-selection=$(awk 'length($0) > 1 && !seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
+# Filters out duplicates
+selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
 
 [[ ! "$selection" ]] && err 'Nothing has been selected!'
 
