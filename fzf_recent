@@ -4,31 +4,24 @@
 
 # This script doesn't execute commands, instead they're just printed to stdout.
 
-if [[ ! "$TERMCMD" ]]; then
-	echo 'ERROR: You must set the $TERMCMD to execute commands in a new terminal instance, i.e. "xterm -e"' >&2
-	exit 1
-fi
+err() { echo "ERROR: $1" >&2; exit 1; }
+
+[[ ! "$TERMCMD" ]] && err 'You must set $TERMCMD to execute commands in a terminal, i.e. "xterm -e"'
 
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/fzf-recent"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fzf-recent"
 mkdir -p "$cache_dir" "$config_dir"
 
-filter_commands() {
-	awk 'length($0) > 1' | # Filter out single character commands
-	awk '!seen[$0]++' # Remove duplicates
-}
-
 [[ ! -f "$cache_dir/all" ]] && compgen -c > "$cache_dir/all"
-touch "$cache_dir/recent" "$cache_dir/all"
-selection=$(cat "$cache_dir/recent" "$cache_dir/all" | filter_commands | fzf)
+touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
-if [[ ! "$selection" ]]; then
-	echo "ERROR: Nothing has been selected!" >&2; exit 1;
-fi
+# Filters out single letter commands & duplicates
+selection=$(awk 'length($0) > 1 && !seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
+
+[[ ! "$selection" ]] && err 'Nothing has been selected!'
 
 printf '%s\n' "$selection" >> "$cache_dir/recent"
 
-touch "$config_dir/background" "$config_dir/terminal"
 if grep -Fxq "$selection" "$config_dir/background"; then
 	printf '%s\n' "$selection"
 elif grep -Fxq "$selection" "$config_dir/terminal"; then
@@ -38,9 +31,9 @@ else
 	read choice
 	
 	if [[ "$choice" = 1 ]]; then
-		printf '%s\n' "$selection" | tee "$config_dir/background"
+		printf '%s\n' "$selection" | tee -a "$config_dir/background"
 	else
-		printf '%s\n' "$selection" > "$config_dir/terminal"
+		printf '%s\n' "$selection" >> "$config_dir/terminal"
 		printf '%s\n' "$TERMCMD $selection"
 	fi
 fi
