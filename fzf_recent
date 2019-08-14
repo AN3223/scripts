@@ -22,7 +22,7 @@ touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
 
 # Ensure the selection exists, and append it to the recent commands
-[[ ! "$selection" ]] && err 'Nothing has been selected!'
+[[ ! "$selection" ]] && err 'Nothing was selected!'
 printf '%s\n' "$selection" >> "$cache_dir/recent"
 
 # If the command has been ran before, run it with the same config,
@@ -32,14 +32,16 @@ if grep -Fxq "$selection" "$config_dir/background"; then
 elif grep -Fxq "$selection" "$config_dir/terminal"; then
 	printf '%s\n' "$TERMCMD $selection"
 else
-	echo "Run program in the background (enter 1) or in the terminal (enter 2)?" >&2
-	read choice
+	header="Run $selection in the background or in the terminal?"
+	choice=$(printf '%s\n%s' 'background' 'terminal' | fzf --header="$header")
 	
-	if [[ "$choice" = 1 ]]; then
+	if [[ "$choice" = 'background' ]]; then
 		printf '%s\n' "$selection" | tee -a "$config_dir/background"
-	else
+	elif [[ "$choice" = 'terminal' ]]; then
 		printf '%s\n' "$selection" >> "$config_dir/terminal"
 		printf '%s\n' "$TERMCMD $selection"
+	else
+		err 'Nothing was selected!'
 	fi
 fi
 
