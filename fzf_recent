@@ -35,9 +35,8 @@ touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 opts='--bind=enter:print-query,tab:replace-query+top'
 selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf $opts)
 
-# Ensure the selection exists, and append it to the recent commands
+# Ensure the selection exists
 [ ! "$selection" ] && err 'Nothing was selected!'
-printf '%s\n' "$selection" >> "$cache_dir/recent"
 
 # If the command has been ran before, run it with the same config,
 # otherwise prompt the user for how the command should be run.
@@ -59,3 +58,5 @@ else
 	fi
 fi
 
+# Record to history
+printf '%s\n' "$selection" >> "$cache_dir/recent"
