@@ -1,9 +1,13 @@
 #!/bin/bash
-# This script is inspired by dmenu_recency. You must set the $TERMCMD environment variable,
-# which should be something like "xterm -e", so applications may be launched in your
-# terminal of choice.
+# This is a script inspired by dmenu_recency. You must set the $TERMCMD environment variable,
+# something like "xterm -e", so applications may be launched in your terminal of choice.
 
-# This script doesn't execute commands, instead they're just printed to stdout.
+# This script doesn't execute commands, instead they're just printed to stdout. Execute the
+# stdout in whatever fashion you want.
+
+# This script uses custom keybinds for ease of use in application selection:
+#   tab: Replace query string with the current selection, like Bash tab complete.
+#   enter: print-query, i.e. just print the query string regardless of the selection.
 
 err() { echo "ERROR: $1" >&2; exit 1; }
 
@@ -18,8 +22,9 @@ mkdir -p "$cache_dir" "$config_dir"
 [[ ! -f "$cache_dir/all" ]] && compgen -c > "$cache_dir/all"
 touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
-# Filters out duplicates and pass the commands to fzf
-selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf)
+# Filter out duplicates and pass commands to fzf (+ custom keybinds)
+opts='--bind=enter:print-query,tab:replace-query+top'
+selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf $opts)
 
 # Ensure the selection exists, and append it to the recent commands
 [[ ! "$selection" ]] && err 'Nothing was selected!'
