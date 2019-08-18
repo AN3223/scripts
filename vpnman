@@ -1,0 +1,47 @@
+#!/bin/sh
+# vpnman {-u | -d}
+# This is a script for bringing up or taking down a VPN connection. -u for up -d for down.
+
+# $XDG_CONFIG_HOME/vpnman/downprocs should be a newline separated list of patterns, any process
+# that matches any of these patterns will be killed prior to downing the VPN connection.
+
+# $XDG_CONFIG_HOME/vpnman/upprocs should be a newline separated list of commands (with or
+# without arguments) to be executed by after bringing up a VPN connection. Arguments are allowed.
+
+# $XDG_CONFIG_HOME/vpnman/vpnprof should be the name (ID) of the NetworkManager VPN profile
+# (connection) which should be upped/downed by this script.
+
+badarg() { echo 'Bad argument, use "u" for up or "d" for down' >&2 ; exit 1 ; }
+
+while getopts ud o; do
+	case "$o" in
+		u)
+			up=1
+			;;
+		d)
+			down=1
+			;;
+		*)
+			badarg
+			;;
+	esac
+done
+shift $((OPTIND-1))
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/vpnman"
+touch "$config_dir/downprocs" "$config_dir/upprocs" "$config_dir/vpnprof"
+vpnprof=$(cat "$config_dir/vpnprof")
+
+if [ "$down" ]; then
+	downprocs=$(cat "$config_dir/downprocs")
+	killall -r -9 "$downprocs"
+	nmcli c down id "$vpnprof"
+elif [ "$up" ]; then
+	nmcli c up id "$vpnprof" &&
+		while read -r cmd; do
+			eval $cmd &
+		done < "$config_dir/upprocs"
+else
+	badarg
+fi
+
