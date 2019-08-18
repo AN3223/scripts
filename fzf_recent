@@ -33,7 +33,7 @@ touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
 # Filter out duplicates and pass commands to fzf (+ custom keybinds)
 opts='--bind=enter:print-query,tab:replace-query+top'
-selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf $opts)
+selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf $opts --history="$cache_dir/recent")
 
 # Ensure the selection exists
 [ ! "$selection" ] && err 'Nothing was selected!'
@@ -59,4 +59,4 @@ else
 fi
 
 # Record to history
-printf '%s\n' "$selection" >> "$cache_dir/recent"
+#printf '%s\n' "$selection" >> "$cache_dir/recent"
