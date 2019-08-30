@@ -1,0 +1,84 @@
+#!/bin/sh
+# Like playerctl, but works with mpv too. Add input-ipc-server=/tmp/listenman to your
+# ~/.config/mpv/mpv.conf
+
+# Requires socat (and optionally requires playerctl if the -p argument is used)
+
+err() { printf 'listenman: %s\n' "$1" >&2; exit 1; }
+mpv_send() { printf '%s\n' "$1" | socat - /tmp/listenman; }
+
+pctl_send() { [ ! "$pctl" ] && exit 1 || playerctl -a "$1"; }
+
+help() {
+	err 'listenman [OPTIONS] SUBCOMMAND
+
+INFO:
+	Similar to playerctl, but works with mpv too. Add 
+	input-ipc-server=/tmp/listenman to your ~/.config/mpv/mpv.conf
+
+OPTIONS:
+	-p
+		Also call playerctl with a matching subcommand
+	-h
+		Shows this message
+
+SUBCOMMANDS:
+	next
+	previous
+	play-pause
+	play
+	pause
+	stop
+'
+}
+
+while getopts 'ph' o; do
+	case "$o" in
+		p)
+			pctl=1
+			;;
+		h | *)
+			help
+			;;
+	esac
+done
+shift $((OPTIND-1))
+
+# Check for dependencies
+command -v socat > /dev/null || err 'socat must be installed'
+if [ "$pctl" ]; then
+	command -v playerctl > /dev/null || err 'playerctl must be installed'
+fi
+
+touch /tmp/listenman
+
+case "$1" in
+	next)
+		mpv_send '{"command": ["playlist-prev"]}'
+		pctl_send next
+		;;
+	previous)
+		mpv_send '{"command": ["playlist-next"]}'
+		pctl_send previous
+		;;
+	play-pause)
+		mpv_send '{"command": ["cycle", "pause"]}'
+		pctl_send play-pause
+		;;
+	play)
+		mpv_send '{"command": ["play"]}'
+		pctl_send play
+		;;
+	pause)
+		mpv_send '{"command": ["pause"]}'
+		pctl_send pause
+		;;
+	stop)
+		mpv_send '{"command": ["stop"]}'
+		pctl_send stop
+		;;
+	*)
+		err 'Invalid subcommand'
+		;;
+esac
+
