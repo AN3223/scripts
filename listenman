@@ -1,7 +1,4 @@
 #!/bin/sh
-# Like playerctl, but works with mpv too. Add input-ipc-server=/tmp/listenman to your
-# ~/.config/mpv/mpv.conf
-
 # Requires socat (and optionally requires playerctl if the -p argument is used)
 
 err() { printf 'listenman: %s\n' "$1" >&2; exit 1; }
