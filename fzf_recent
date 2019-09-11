@@ -58,5 +58,3 @@ else
 	fi
 fi
 
-# Record to history
-#printf '%s\n' "$selection" >> "$cache_dir/recent"
