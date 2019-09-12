@@ -1,4 +1,0 @@
-#!/bin/sh
-# toggle-service <service>
-
-systemctl --user is-active $1 && systemctl --user stop $1 || systemctl --user start $1
