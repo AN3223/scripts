@@ -6,58 +6,55 @@
 # Requires (i3): imagemagick, i3lock
 # Optionally requires: ffmpeg
 
+set -e
+
+err() { printf '%s\n' "$1" >&2; exit 1; }
+
 # sway sets a "SWAYSOCK" variable, so just use that to detect sway
 if [ "$SWAYSOCK" ]; then
-	if ! command -v swaylock > /dev/null; then
-		echo "swaylock must be installed" >&2
-		exit 1
-	elif ! command -v grim > /dev/null; then
-		echo "grim must be installed" >&2
-		exit 1
-	fi
-	locker=swaylock
-	sway=true
+	command -v swaylock > /dev/null || err 'swaylock must be installed'
+	command -v grim > /dev/null     || err 'grim must be installed'
+	locker=swaylock; sway=1;
 else
-	if ! command -v i3lock > /dev/null; then
-		echo "i3lock must be installed" >&2
-		exit 1
-	fi
-	locker=i3lock
-	i3=true
+	command -v i3lock > /dev/null   || err 'i3lock must be installed'
+	locker=i3lock; i3=1;
 fi
 
 # use ffmpeg if installed
-if command -v ffmpeg > /dev/null; then
-	use_ffmpeg=true
-fi
+ command -v ffmpeg > /dev/null && ffmpeg=1
 
 # imagemagick is only required for i3, or if ffmpeg is not installed
-if ! command -v import > /dev/null; then
-	if [ "$i3" ] || [ ! "$use_ffmpeg" ]; then
-		echo "imagemagick must be installed" >&2
-		exit 1
+if [ "$i3" ] || [ ! "$ffmpeg" ]; then
+	if ! command -v import > /dev/null; then
+		err 'imagemagick must be installed'
 	fi
 fi
 
+# lock down the screenshot file (may be for naught)
+touch /tmp/blurlock.png; chmod 700 /tmp/blurlock.png;
+
 # take screenshot
 if [ "$sway" ]; then
-	grim /tmp/screenshot.png
+	grim /tmp/blurlock.png
 else
-	import -window root /tmp/screenshot.png
+	import -window root /tmp/blurlock.png
 fi
 
 # blur it
-if [ "$use_ffmpeg" ]; then
-	ffmpeg -loglevel fatal -y -i /tmp/screenshot.png \
+if [ "$ffmpeg" ]; then
+	ffmpeg -loglevel fatal -y -i /tmp/blurlock.png \
 		-filter_complex "boxblur=20" -vframes 1 \
-		/tmp/screenshotblur.png
+		/tmp/blurlock_final.png
 else
-	convert /tmp/screenshot.png -blur 0x20 /tmp/screenshotblur.png
+	convert /tmp/blurlock.png -blur 0x20 /tmp/blurlock_final.png
 fi
-rm /tmp/screenshot.png
+
+rm -f /tmp/blurlock.png
+mv /tmp/blurlock_final.png /tmp/blurlock.png
 
 # lock the screen
-$locker -i /tmp/screenshotblur.png
+$locker -i /tmp/blurlock.png
+rm -f /tmp/blurlock.png
 
 # sleep 1 adds a small delay to prevent possible race conditions with suspend
 sleep 1
