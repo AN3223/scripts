@@ -14,7 +14,7 @@ err() { printf '%s\n' "$1" >&2; exit 1; }
 if [ "$SWAYSOCK" ]; then
 	command -v swaylock > /dev/null || err 'swaylock must be installed'
 	command -v grim > /dev/null     || err 'grim must be installed'
-	locker=swaylock; sway=1;
+	locker='swaylock -f'; sway=1;
 else
 	command -v i3lock > /dev/null   || err 'i3lock must be installed'
 	locker=i3lock; i3=1;
