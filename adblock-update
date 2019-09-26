@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# /etc/cron.weekly/adblock-update
+
+set -e
+
+# Ensure we don't use an old file
+rm -f /etc/hosts.pending
+
+# Timestamp it
+date +'# curled on %c' >> /etc/hosts.pending
+
+# Fetch it
+curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts >> /etc/hosts.pending
+
+# Test it
+#echo '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
+
+# Verify it
+if ! verify_hosts /etc/hosts.pending; then
+	echo 'failed: verify_hosts /etc/hosts.pending' |
+	mail -s '/etc/hosts could not be updated' root
+	exit 1
+fi
+
+# Block sites from /etc/hosts.include
+while read -r site; do
+	printf '0.0.0.0 %s\n' "$site" >> /etc/hosts.pending
+done < /etc/hosts.include
+
+# Finalize it
+mv /etc/hosts.pending /etc/hosts
+
