@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mpv --config-dir="$HOME/.config/mpv-img/" -- "$@"
+
