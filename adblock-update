@@ -18,8 +18,7 @@ curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts >> /etc/ho
 
 # Verify it
 if ! verify_hosts /etc/hosts.pending; then
-	echo 'failed: verify_hosts /etc/hosts.pending' |
-	mail -s '/etc/hosts could not be updated' root
+	echo 'failed: verify_hosts /etc/hosts.pending' >&2
 	exit 1
 fi
 
