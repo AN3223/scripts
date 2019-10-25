@@ -1,0 +1,12 @@
+#!/bin/sh
+# This script requires a line-separated list of stream URLs at ~/.streams and
+# youtube-dl. It will echo a list of streams that are currently live. I
+# recommend using this with cron (and set up cron to send you mail).
+
+set -e
+while read -r stream; do
+	if youtube-dl -qs "$stream" 2> /dev/null; then
+		echo "$stream is live"
+	fi
+done < ~/.streams
+
