@@ -1,8 +1,7 @@
 #!/bin/sh
-# Requires socat (and optionally requires playerctl if the -p argument is used)
+# Requires socat
 
 err() { printf 'listenman: %s\n' "$1" >&2; exit 1; }
-check() { command -v "$1" > /dev/null || err "$1 must be installed"; }
 mpv_send() { printf '%s\n' "$1" | socat - /tmp/listenman; }
 
 help() {
@@ -13,8 +12,6 @@ INFO:
 	input-ipc-server=/tmp/listenman to your ~/.config/mpv/mpv.conf
 
 OPTIONS:
-	-p
-		Also call playerctl with a matching subcommand
 	-h
 		Shows this message
 
@@ -27,16 +24,14 @@ SUBCOMMANDS:
 	stop'
 }
 
-while getopts 'ph' o; do
+while getopts 'h' o; do
 	case "$o" in
-		p)     playerctl=1;;
 		h | *) help;;
 	esac
 done
 shift $((OPTIND-1))
 
-# Check for dependencies
-check socat && [ "$playerctl" ] && check playerctl
+command -v socat > /dev/null || err "socat must be installed"
 
 touch /tmp/listenman
 
@@ -49,7 +44,4 @@ case "$1" in
 	stop)       mpv_send '{"command": ["stop"]}';;
 	*)          err      'Invalid subcommand';;
 esac
-
-# Implements -p
-[ "$playerctl" ] && playerctl -a "$1"
 
