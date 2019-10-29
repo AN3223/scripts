@@ -1,0 +1,9 @@
+#!/bin/sh
+# Plays a noise similar to a fan or heavy rain
+# Requires sox
+
+play -Gn \
+	synth brownnoise \
+	tremolo 0.05 20 \
+	fade t 45
+
