@@ -1,13 +1,14 @@
 #!/bin/sh
-# This is a script inspired by dmenu_recency. You must set the $TERMCMD environment variable,
-# something like "xterm -e", so applications may be launched in your terminal of choice.
+# This is a script inspired by dmenu_recency. You must set the $TERMCMD
+# environment variable, something like "xterm -e", so applications may be
+# launched in your terminal of choice.
 
-# This script doesn't execute commands, instead they're just printed to stdout. Execute the
-# stdout in whatever fashion you want.
+# This script doesn't execute commands, instead they're just printed to stdout.
+# Execute the stdout in whatever fashion you want.
 
 # This script uses custom keybinds for ease of use in application selection:
-#   tab: Replace query string with the current selection, like Bash tab complete.
-#   enter: print-query, i.e. just print the query string regardless of the selection.
+#  tab: Replace query string with the current selection, like Bash tab complete
+#  enter: print-query, i.e. just print query string regardless of the selection
 
 err() { echo "ERROR: $1" >&2; exit 1; }
 
@@ -15,12 +16,13 @@ err() { echo "ERROR: $1" >&2; exit 1; }
 commands() {
 	IFS_="$IFS"; IFS=:;
 	for path in $PATH; do
-		find "$path" -maxdepth 1 -executable -exec basename {} \; 2> /dev/null
+		find "$path" -maxdepth 1 -executable \
+			-exec basename {} \; 2> /dev/null
 	done
 	IFS="$IFS_"
 }
 
-[ ! "$TERMCMD" ] && err 'You must set $TERMCMD to run commands in a terminal, i.e. "xterm -e"'
+[ ! "$TERMCMD" ] && err '$TERMCMD must be set, i.e. "xterm -e"'
 
 # Find the cache/config directories and ensure they exist
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/fzf-recent"
@@ -33,7 +35,8 @@ touch "$cache_dir/recent" "$config_dir/background" "$config_dir/terminal"
 
 # Filter out duplicates and pass commands to fzf (+ custom keybinds)
 opts='--bind=enter:print-query,tab:replace-query+top'
-selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" | fzf $opts --history="$cache_dir/recent")
+selection=$(awk '!seen[$0]++' "$cache_dir/recent" "$cache_dir/all" |
+	fzf $opts --history="$cache_dir/recent")
 
 # Ensure the selection exists
 [ ! "$selection" ] && err 'Nothing was selected!'
@@ -45,8 +48,8 @@ if grep -Fxq "$selection" "$config_dir/background"; then
 elif grep -Fxq "$selection" "$config_dir/terminal"; then
 	printf '%s\n' "$TERMCMD $selection"
 else
-	header="Run $selection in the background or in the terminal?"
-	choice=$(printf '%s\n%s' 'background' 'terminal' | fzf --header="$header")
+	msg="Run $selection in the background or in the terminal?"
+	choice=$(printf '%s\n%s' 'background' 'terminal' | fzf --header="$msg")
 	
 	if [ "$choice" = 'background' ]; then
 		printf '%s\n' "$selection" | tee -a "$config_dir/background"
@@ -57,4 +60,9 @@ else
 		err 'Nothing was selected!'
 	fi
 fi
+
+# Remove duplicates from history
+tmp="$(mktemp)"
+awk '!seen[$0]++' "$cache_dir/recent" > "$tmp"
+mv "$tmp" "$cache_dir/recent"
 
