@@ -4,6 +4,7 @@
 
 play -Gn \
 	synth brownnoise \
-	tremolo 0.05 20 \
+	tremolo 0.05 10 \
+	tremolo 0.08 20 \
 	fade t 45
 
