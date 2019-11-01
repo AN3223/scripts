@@ -76,7 +76,7 @@ case "$1" in
 		rm "$SVDIR/$2"
 		;;
 	*)
-		exec sv $SVARGS "$@"
+		exec sv "$SVARGS" "$@"
 		;;
 esac
 
