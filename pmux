@@ -6,7 +6,7 @@ tmux start-server
 if tmux has-session -t 'pmux'; then
 	session_number=1
 	while tmux has-session -t "pmux${session_number}"; do
-		session_number=$(expr $session_number + 1)
+		: $((session_number += 1))
 	done
 	session_name="pmux${session_number}"
 else
@@ -16,7 +16,7 @@ fi
 tmux new-session -d -s "$session_name"
 
 for n in $(seq 2 10); do
-	tmux new-window -ad -t "$session_name":$n
+	tmux new-window -ad -t "$session_name":"$n"
 done
 
 tmux attach-session -t "$session_name"
