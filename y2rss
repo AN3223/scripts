@@ -15,20 +15,20 @@ from sys import argv
 # https://youtube.com/feeds/videos.xml?user=tuxreviews
 # https://youtube.com/feeds/videos.xml?playlist_id=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG
 
-url = argv[1]
-parsed = urlparse(url)
-path = [x for x in parsed.path.split('/') if x]
+URL = argv[1]
+PARSED = urlparse(URL)
+PATH = [x for x in PARSED.path.split('/') if x]
 
-if path[0] == 'user':
-    id = path[1]
-    rss = f"https://youtube.com/feeds/videos.xml?user={id}"
-elif path[0] == 'channel':
-    id = path[1]
-    rss = f"https://youtube.com/feeds/videos.xml?channel_id={id}"
-elif path[0] == 'playlist':
-    id = parsed.query.lstrip('list=')
-    rss = f"https://youtube.com/feeds/videos.xml?playlist_id={id}"
+if PATH[0] == 'user':
+    ID = PATH[1]
+    RSS = f"https://youtube.com/feeds/videos.xml?user={id}"
+elif PATH[0] == 'channel':
+    ID = PATH[1]
+    RSS = f"https://youtube.com/feeds/videos.xml?channel_id={id}"
+elif PATH[0] == 'playlist':
+    ID = PARSED.query.lstrip('list=')
+    RSS = f"https://youtube.com/feeds/videos.xml?playlist_id={id}"
 else:
     raise ValueError('Invalid URL')
 
-print(rss)
+print(RSS)
