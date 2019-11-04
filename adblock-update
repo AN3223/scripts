@@ -14,11 +14,11 @@ date +'# curled on %c' >> /etc/hosts.pending
 curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts >> /etc/hosts.pending
 
 # Test it
-#echo '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
+#printf '%s\n'  '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
 
 # Verify it
 if ! verify_hosts /etc/hosts.pending; then
-	echo 'failed: verify_hosts /etc/hosts.pending' >&2
+	printf '%s\n' 'failed: verify_hosts /etc/hosts.pending' >&2
 	exit 1
 fi
 

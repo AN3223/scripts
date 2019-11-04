@@ -10,7 +10,7 @@
 #  tab: Replace query string with the current selection, like Bash tab complete
 #  enter: print-query, i.e. just print query string regardless of the selection
 
-err() { echo "ERROR: $1" >&2; exit 1; }
+err() { printf '%s\n' "ERROR: $1" >&2; exit 1; }
 
 # Lists all of the executables on $PATH. Slow and ugly, but portable!
 commands() {
