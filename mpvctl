@@ -1,14 +1,14 @@
 #!/bin/sh
-# This is a script for controlling mpv via a socket located at /tmp/listenman
-# Be sure to add input-ipc-server=/tmp/listenman to your mpv.conf
+# This is a script for controlling mpv via a socket located at /tmp/mpvctl
+# Be sure to add input-ipc-server=/tmp/mpvctl to your mpv.conf
 # Requires socat
 
-err()      { printf 'listenman: %s\n' "$1" >&2; exit 1;   }
-mpv_send() { printf '%s\n' "$1" | socat - /tmp/listenman; }
+err()      { printf 'mpvctl: %s\n' "$1" >&2; exit 1;   }
+mpv_send() { printf '%s\n' "$1" | socat - /tmp/mpvctl; }
 
 command -v socat > /dev/null || err "socat must be installed"
 
-: > /tmp/listenman
+: > /tmp/mpvctl
 
 case "$1" in
 	next)       mpv_send '{"command": ["playlist-next"]}';;
