@@ -15,7 +15,7 @@ fi
 
 tmux new-session -d -s "$session_name"
 
-for n in $(seq 2 10); do
+for n in 2 3 4 5 6 7 8 9 10; do
 	tmux new-window -ad -t "$session_name":"$n"
 done
 
