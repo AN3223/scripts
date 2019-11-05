@@ -8,8 +8,6 @@ mpv_send() { printf '%s\n' "$1" | socat - /tmp/mpvctl; }
 
 command -v socat > /dev/null || err "socat must be installed"
 
-: > /tmp/mpvctl
-
 case "$1" in
 	next)       mpv_send '{"command": ["playlist-next"]}';;
 	previous)   mpv_send '{"command": ["playlist-prev"]}';;
