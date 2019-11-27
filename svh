@@ -7,7 +7,7 @@ help() {
 	svh - dead simple sv helper
 
 SYNOPSIS
-	svh [OPTIONS] command
+	svh [OPTIONS] commands ...
 
 OPTIONS
 	-u
@@ -76,7 +76,7 @@ case "$1" in
 		rm "$SVDIR/$2"
 		;;
 	*)
-		exec sv "$SVARGS" "$@"
+		exec sv $SVARGS "$@"
 		;;
 esac
 
