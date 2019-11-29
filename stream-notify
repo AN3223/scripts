@@ -1,7 +1,13 @@
 #!/bin/sh
 # This script requires a line-separated list of stream URLs at ~/.streams and
-# youtube-dl. It will print a list of streams that are currently live. I
-# recommend using this with cron (and set up cron to send you mail).
+# youtube-dl. It will print a list of streams that are currently live.
+
+# Some ideas on how to use this:
+# 1. Just run this from a terminal when you're bored and look at the output.
+# 2. Run this from cron, and have cron set up to send you mail, so you
+# will receive mail while a stream is live.
+# 3. Run this from cron but redirect the stdout into a file, and then
+# check the file when you're looking for a stream to watch.
 
 set -e
 while read -r stream; do
