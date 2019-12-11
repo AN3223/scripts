@@ -1,0 +1,29 @@
+#!/bin/sh
+# Like sudoedit, but for doas. Every argument will be treated as a file to edit.
+# There's no support for passing arguments to doas, so you can only doas root.
+#
+# This script is SECURITY SENSITIVE! Special care has been taken to correctly
+# preserve file attributes. Please exercise CAUTION when modifying AND using
+# this script.
+
+set -e
+
+for file; do
+	tmp="$(mktemp)"
+	(cat "$file" || doas cat "$file") > "$tmp"
+
+	filetmp="$(mktemp)"
+	cat "$tmp" > "$filetmp"
+
+	${EDITOR:-vi} "$tmp"
+
+	if cmp -s "$tmp" "$filetmp"; then
+		echo 'File unchanged, exiting...'
+	else
+		doas dd if="$tmp" of="$file"
+		echo 'Done, changes written'
+	fi
+
+	rm "$tmp" "$filetmp"
+done
+
