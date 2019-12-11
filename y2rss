@@ -23,14 +23,15 @@ PATH = [x for x in PARSED.path.split('/') if x]
 
 if PATH[0] == 'user':
     ID = PATH[1]
-    RSS = f"https://youtube.com/feeds/videos.xml?user={id}"
+    RSS = f"https://youtube.com/feeds/videos.xml?user={ID}"
 elif PATH[0] == 'channel':
     ID = PATH[1]
-    RSS = f"https://youtube.com/feeds/videos.xml?channel_id={id}"
+    RSS = f"https://youtube.com/feeds/videos.xml?channel_id={ID}"
 elif PATH[0] == 'playlist':
     ID = PARSED.query.lstrip('list=')
-    RSS = f"https://youtube.com/feeds/videos.xml?playlist_id={id}"
+    RSS = f"https://youtube.com/feeds/videos.xml?playlist_id={ID}"
 else:
     raise ValueError('Invalid URL')
 
 print(RSS)
+
