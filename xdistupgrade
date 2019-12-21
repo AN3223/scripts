@@ -1,0 +1,46 @@
+#!/bin/sh
+# This script builds/installs a list of packages using xbps-src. If a package
+# is already built/installed then it will be ignored. If XBPS_DISTDIR hasn't
+# been bootstrapped then it will be bootstrapped.
+#
+# Requires:
+# 1) xtools to be installed
+# 2) XBPS_DISTDIR to point to a void-packages repository
+# 3) XDISTUPGRADE_PKGS to be set to a list of packages, the variable should
+#    be defined in $XBPS_DISTDIR/etc/conf or ~/.xbps-src.conf (searched
+#    in that order).
+
+set -ef
+
+xdistdir="$(xdistdir)"
+cd "$xdistdir"
+
+# Source the xbps-src config file
+# shellcheck disable=SC1090
+if [ -f "$xdistdir"/etc/conf ]; then
+	. "$xdistdir"/etc/conf
+elif [ -f ~/.xbps-src.conf ]; then
+	. ~/.xbps-src.conf
+else
+	. "$xdistdir"/etc/defaults.conf # last-ditch effort
+fi
+
+# Verify XDISTUPGRADE_PKGS has been set
+[ "$XDISTUPGRADE_PKGS" ]
+
+# Bootstrap if necessary
+if [ -d ./masterdir ]; then
+	./xbps-src bootstrap-update
+else
+	./xbps-src binary-bootstrap
+fi
+
+# Build
+for pkg in $XDISTUPGRADE_PKGS; do
+	./xbps-src -CE pkg "$pkg"
+done
+
+# Install
+# shellcheck disable=SC2086 # (globbing is disabled)
+xi $XDISTUPGRADE_PKGS
+
