@@ -1,7 +1,8 @@
 #!/bin/sh
 # This script builds/installs a list of packages using xbps-src. If a package
 # is already built/installed then it will be ignored. If XBPS_DISTDIR hasn't
-# been bootstrapped then it will be bootstrapped.
+# been bootstrapped then it will be bootstrapped. This script won't manage
+# your git repository for you.
 #
 # Requires:
 # 1) xtools to be installed
@@ -28,7 +29,7 @@ fi
 # Verify XDISTUPGRADE_PKGS has been set
 [ "$XDISTUPGRADE_PKGS" ]
 
-# Bootstrap if necessary
+# Bootstrap
 if [ -d ./masterdir ]; then
 	./xbps-src bootstrap-update
 else
