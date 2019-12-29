@@ -10,20 +10,26 @@ set -e
 
 for file; do
 	tmp="$(mktemp)"
-	(cat "$file" || doas cat "$file") > "$tmp"
+	if [ -f "$file" ] && [ ! -r "$file" ]; then
+		doas cat "$file" > "$tmp"
+	elif [ -r "$file" ]; then
+		cat "$file" > "$tmp"
+	else
+		:
+	fi
 
-	filetmp="$(mktemp)"
-	cat "$tmp" > "$filetmp"
+	tmpcopy="$(mktemp)"
+	cat "$tmp" > "$tmpcopy"
 
 	${EDITOR:-vi} "$tmp"
 
-	if cmp -s "$tmp" "$filetmp"; then
+	if cmp -s "$tmp" "$tmpcopy"; then
 		echo 'File unchanged, exiting...'
 	else
 		doas dd if="$tmp" of="$file"
 		echo 'Done, changes written'
 	fi
 
-	rm "$tmp" "$filetmp"
+	rm "$tmp" "$tmpcopy"
 done
 
