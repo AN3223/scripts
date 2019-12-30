@@ -6,10 +6,11 @@
 #
 # Requires:
 # 1) xtools to be installed
-# 2) XBPS_DISTDIR to point to a void-packages repository
-# 3) XDISTUPGRADE_PKGS to be set to a list of packages, the variable should
-#    be defined in $XBPS_DISTDIR/etc/conf or ~/.xbps-src.conf (searched
-#    in that order).
+# 2) xdistdir should be able to find a void-packages repository (i.e. set the
+#    XBPS_DISTDIR environment variable)
+# 3) XDISTUPGRADE_PKGS to be set to a space-seperated list of packages, the
+#    variable should be defined in $XBPS_DISTDIR/etc/conf or ~/.xbps-src.conf
+#    (searched in that order)
 
 xdistdir="$(xdistdir)"
 cd "$xdistdir"
