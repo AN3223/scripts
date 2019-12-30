@@ -1,8 +1,6 @@
-#!/bin/sh
+#!/bin/sh -e
 
 # /etc/cron.weekly/adblock-update
-
-set -e
 
 # Ensure we don't use an old file
 rm -f /etc/hosts.pending

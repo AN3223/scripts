@@ -1,12 +1,10 @@
-#!/bin/sh
+#!/bin/sh -e
 # Like sudoedit, but for doas. Every argument will be treated as a file to edit.
 # There's no support for passing arguments to doas, so you can only doas root.
 #
 # This script is SECURITY SENSITIVE! Special care has been taken to correctly
 # preserve file attributes. Please exercise CAUTION when modifying AND using
 # this script.
-
-set -e
 
 for file; do
 	tmp="$(mktemp)"

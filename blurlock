@@ -1,12 +1,10 @@
-#!/bin/sh
+#!/bin/sh -e
 # manjaro-i3 script for blurring the screen and locking it
 # Now works with sway too. Also increased the blur.
 # Original script: https://gitlab.manjaro.org/packages/community/i3/i3exit
 # Requires (sway): grim, swaylock
 # Requires (i3): imagemagick, i3lock
 # Optionally requires: ffmpeg
-
-set -e
 
 err() { printf '%s\n' "$1" >&2; exit 1; }
 
@@ -21,7 +19,7 @@ else
 fi
 
 # use ffmpeg if installed
- command -v ffmpeg > /dev/null && ffmpeg=1
+command -v ffmpeg > /dev/null && ffmpeg=1
 
 # imagemagick is only required for i3, or if ffmpeg is not installed
 if [ "$i3" ] || [ ! "$ffmpeg" ]; then

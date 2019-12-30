@@ -1,6 +1,4 @@
-#!/bin/sh
-
-set -e
+#!/bin/sh -e
 
 help() {
 	printf %s 'NAME

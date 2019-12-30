@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 # This script requires a line-separated list of stream URLs at ~/.streams and
 # youtube-dl. It will print a list of streams that are currently live.
 
@@ -9,7 +9,6 @@
 # 3. Run this from cron but redirect the stdout into a file, and then
 # check the file when you're looking for a stream to watch.
 
-set -e
 while read -r stream; do
 	if youtube-dl -qs "$stream" 2> /dev/null; then
 		printf '%s\n' "$stream is live"

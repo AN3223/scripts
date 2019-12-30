@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -ef
 # This script builds/installs a list of packages using xbps-src. If a package
 # is already built/installed then it will be ignored. If XBPS_DISTDIR hasn't
 # been bootstrapped then it will be bootstrapped. This script won't manage
@@ -10,8 +10,6 @@
 # 3) XDISTUPGRADE_PKGS to be set to a list of packages, the variable should
 #    be defined in $XBPS_DISTDIR/etc/conf or ~/.xbps-src.conf (searched
 #    in that order).
-
-set -ef
 
 xdistdir="$(xdistdir)"
 cd "$xdistdir"

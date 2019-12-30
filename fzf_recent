@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 # This is a script inspired by dmenu_recency. You must set the $TERMCMD
 # environment variable, something like "xterm -e", so applications may be
 # launched in your terminal of choice.
@@ -9,8 +9,6 @@
 # This script uses custom keybinds for ease of use in application selection:
 #  tab: Replace query string with the current selection, i.e. tab completion
 #  enter: print-query, i.e. just print query string regardless of the selection
-
-set -e
 
 err() { printf '%s\n' "ERROR: $1" >&2; exit 1; }
 tac() { sed '1!G;h;$!d' "$@"; }

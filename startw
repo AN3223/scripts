@@ -1,6 +1,4 @@
-#!/bin/sh
-
-set -e
+#!/bin/sh -e
 
 . ~/.wayenv
 ${WAYLAND_COMPOSITOR:-sway} 2>&1 | logger
