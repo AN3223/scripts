@@ -1,0 +1,30 @@
+#!/bin/sh
+# I made this as a sed exercise. It should be mostly POSIX, though there
+# is some fun non-POSIX GNU code commented out.
+# Searches .srt subtitle files within the current directory, (attempts
+# to) convert them to plain text, and then pipes them into mimic for TTS.
+
+getrandomvoice() {
+	mimic -lv | cut -d : -f 2 | tr ' ' "$lf" | sed '/^$/d' | shuf -n 1
+}
+mimicrandom() {
+	while read -r line; do
+		mimic -t "$line" -pw -voice "$(getrandomvoice)"
+	done
+}
+lf='
+'
+
+exec 2> /dev/null
+find . -type f -name '*.srt' -exec cat {} \; |
+	#shuf | # non-posix fun
+	sed '{
+		/^.*-->.*$/d    # Remove timestamps
+		s/<.*>//g       # Remove italics et al
+		/^[0-9][0-9]*/d # Remove number lines
+		/^-.*/d         # Remove background dialog
+		s/{.*}//g       # Remove whatever these things are
+	}' |
+	#mimicrandom # more non-posix fun
+	mimic -pw
+
