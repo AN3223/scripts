@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ef
 
 help() {
 	printf %s 'NAME
@@ -30,7 +30,7 @@ COMMANDS
 		Enables a service (i.e. ln -s /etc/sv/$service $SVDIR/)
 
 	disable service
-		Disables a service (i.e. rm $SVDIR/$service)
+		Disables a service (i.e. unlink $SVDIR/$service)
 
 ENVIRONMENT
 	SVDIR   Is used by sv if sv is called AND if -u is not set.
@@ -71,9 +71,10 @@ case "$1" in
 		;;
 	disable)
 		[ ! "$2" ] && err 'No service provided'
-		rm "$SVDIR/$2"
+		unlink "$SVDIR/$2"
 		;;
 	*)
+		# shellcheck disable=2086 # globbing disabled
 		exec sv $SVARGS "$@"
 		;;
 esac
