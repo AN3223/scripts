@@ -1,0 +1,67 @@
+#!/bin/sh -ef
+# This is a script inspired by dmenu_recency. You must set the $TERMCMD
+# environment variable, something like "xterm -e", so applications may be
+# launched in your terminal of choice.
+
+# This script doesn't execute selected commands, they are instead printed to
+# stdout. Execute the stdout in whatever fashion you want.
+
+# This script uses custom keybinds for ease of use in application selection:
+#  tab: Replace query string with the current selection, i.e. tab completion
+#  enter: print-query, i.e. just print query string regardless of the selection
+
+# shellcheck disable=2086 # globbing is disabled
+
+err() { printf '%s\n' "$0: $1" >&2; exit 1; }
+
+[ ! "$TERMCMD" ] && err '$TERMCMD must be set, i.e. TERMCMD="xterm -e"'
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fzfrecent"
+mkdir -p "$config_dir"
+
+# Ensure all of the config files exist
+: >> "$config_dir/recent" >> "$config_dir/background" >> "$config_dir/terminal"
+
+# Filter out duplicates and pass commands to fzf (+ custom keybinds)
+opts='--bind=enter:print-query,tab:replace-query+top'
+sel="$(fzf $opts --history="$config_dir/recent" < "$config_dir/recent")"
+
+# Ensure the selection exists
+[ ! "$sel" ] && err 'Nothing was selected!'
+
+# If the command has been ran before, run it with the same config,
+# otherwise prompt the user for how the command should be run.
+if grep -Fxq "$sel" "$config_dir/background"; then
+	printf '%s\n' "$sel"
+elif grep -Fxq "$sel" "$config_dir/terminal"; then
+	printf '%s\n' "$TERMCMD $sel"
+else
+	header="Run $sel in the background or in the terminal?"
+	ctx=$(printf '%s\n%s' 'background' 'terminal' |
+		fzf --header="$header")
+
+	if   [ "$ctx" = 'background' ]; then
+		printf '%s\n' "$sel" | tee -a "$config_dir/background"
+	elif [ "$ctx" = 'terminal' ]; then
+		printf '%s\n' "$sel" >> "$config_dir/terminal"
+		printf '%s\n' "$TERMCMD $sel"
+	else
+		err 'Nothing was selected!'
+	fi
+fi
+
+# dedupe history
+tmp=$(mktemp)
+while read -r line; do
+	if [ "$line" = "$sel" ]; then
+		dupe=1; continue;
+	fi
+	printf '%s\n' "$line" >> "$tmp"
+done < "$config_dir/recent"
+
+if [ "$dupe" ]; then
+	printf '%s\n' "$sel" >> "$tmp"
+	cat "$tmp" > "$config_dir/recent"
+fi
+rm "$tmp"
+
