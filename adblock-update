@@ -9,14 +9,24 @@ rm -f /etc/hosts.pending
 date +'# curled on %c' >> /etc/hosts.pending
 
 # Fetch it
-curl https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts >> /etc/hosts.pending
+curl -Ss https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
+	>> /etc/hosts.pending
 
 # Test it
-#printf '%s\n'  '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
+#printf '%s\n' '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
 
 # Verify it
-if ! verify_hosts /etc/hosts.pending; then
-	printf '%s\n' 'failed: verify_hosts /etc/hosts.pending' >&2
+awkexp='NR == FNR { allowed[$0]; next }
+
+# If an IP is not in the list of allowed IPs then print it and exit
+!($1 in allowed) && ! /\s*#/ && ! /^\s*$/ {
+	print $1
+	exit
+}
+'
+disallowed=$(awk "$awkexp" /etc/hosts.allowed /etc/hosts.pending)
+if [ "$disallowed" ]; then
+	echo "$disallowed not allowed, see /etc/hosts.pending" >&2
 	exit 1
 fi
 
