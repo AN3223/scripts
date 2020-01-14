@@ -6,6 +6,8 @@
 # preserve file attributes. Please exercise CAUTION when modifying AND using
 # this script.
 
+trap 'rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM
+
 for file; do
 	tmp="$(mktemp)"
 	if [ -f "$file" ] && [ ! -r "$file" ]; then
