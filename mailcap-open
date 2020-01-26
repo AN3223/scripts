@@ -78,13 +78,13 @@ select_command() {(
 		copiousoutput=
 		needsterminal=
 
-		FILE_MIMETYPE=$(strip_whitespace "$FILE_MIMETYPE")
-
 		# Skip comments
 		[ "${FILE_MIMETYPE##\#*}" ] || continue
 
 		# Skip empty lines
 		[ "$FILE_MIMETYPE" ] || continue
+
+		FILE_MIMETYPE=$(strip_whitespace "$FILE_MIMETYPE")
 
 		# Skip non-matching mimetypes
 		if [ "$FILE_MIMETYPE" = "$MIMETYPE" ]; then
