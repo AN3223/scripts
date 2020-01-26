@@ -1,0 +1,147 @@
+#!/bin/sh -ef
+# This is a file opener (like xdg-open) that uses the mailcap file for
+# configuration. The interface is extremely simple:
+# mailcap-open FILE
+# ...and the rest is handled by the mailcap file (~/.mailcap-open or
+# ~/.mailcap or /etc/ mailcap).
+
+# The following environment variables are used:
+#
+# MIMER: the command used to get the mimetype of a file, defaults to
+# "xdg-mime query filetype"
+#
+# DOWNLOADER: the command used to download from URLs, defaults to curl
+# (expects result to be printed to stdout)
+#
+# One quirk you should know is that %s is not truly replaced with the
+# proper value, but is instead replaced with a variable containing the
+# proper value. This is done on purpose to avoid quoting mishaps. So
+# when you use %s in your mailcap file you should double quote it like
+# this "%s"
+
+trap 'rm -f "$tmp"' EXIT HUP QUIT INT TERM
+
+DOWNLOADER=${DOWNLOADER:-curl}
+MIMER=${MIMER:-xdg-mime query filetype}
+
+export FILENAME="$1"
+case "$FILENAME" in # Handle URLs
+	*://*)
+		tmp=$(mktemp)
+		$DOWNLOADER "$FILENAME" > "$tmp"
+		FILENAME="$tmp"
+		;;
+	*)
+		;;
+esac
+
+if [ -r "$HOME/.mailcap-open" ]; then
+	MAILCAP="$HOME/.mailcap-open"
+elif [ -r "$HOME/.mailcap" ]; then
+	MAILCAP="$HOME/.mailcap"
+elif [ -r /etc/mailcap ]; then
+	MAILCAP=/etc/mailcap
+else
+	echo 'Unable to find mailcap file' >&2
+	exit 1
+fi
+
+MIMETYPE=$($MIMER "$FILENAME")
+
+# Recursively replaces %s and %t
+percent_substitute() {
+		case "$1" in
+			*%t*)
+				percent_substitute "${1%%%t*}${FILE_MIMETYPE}${1##*%t}"
+				;;
+			*%s*)
+				percent_substitute "${1%%%s*}"'${FILENAME}'"${1##*%s}"
+				;;
+			*)
+				printf '%s' "$1"
+				return
+				;;
+		esac
+}
+
+# Strips surrounding whitespace from a string
+strip_whitespace() {
+	string=${1:-$(cat -)}
+	string=${string## }
+	string=${string%% }
+	printf '%s\n' "$string"
+}
+
+select_command() {(
+	IFS=';'
+	while read -r FILE_MIMETYPE cmd opts; do
+		copiousoutput=
+		needsterminal=
+
+		FILE_MIMETYPE=$(strip_whitespace "$FILE_MIMETYPE")
+
+		# Skip comments
+		[ "${FILE_MIMETYPE##\#*}" ] || continue
+
+		# Skip empty lines
+		[ "$FILE_MIMETYPE" ] || continue
+
+		# Skip non-matching mimetypes
+		if [ "$FILE_MIMETYPE" = "$MIMETYPE" ]; then
+			:
+		elif [ "$(dirname "$FILE_MIMETYPE")" = "$(dirname "$MIMETYPE")" ] && \
+			[ "$(basename "$FILE_MIMETYPE")" = '*' ]; then
+				:
+		else
+			continue
+		fi
+
+		for opt in $opts; do
+			opt=$(strip_whitespace "$opt")
+			case "$opt" in
+				needsterminal)
+					needsterminal=1
+					;;
+				copiousoutput)
+					copiousoutput=1
+					;;
+				test=*)
+					if ! eval "${opt#test=}"; then
+						exit 1 # go to next mimetype
+					fi
+					;;
+				notes=*)
+					;;
+				print=*) # TODO should this be used?
+					;;
+				*)
+					echo "Warning, unrecognized option: $opt" >&2
+					;;
+			esac
+		done || continue
+
+		# The rest of this loop generates shell code in stdout
+
+		percent_substitute "$cmd"
+
+		# Prevent unneeded output
+		if [ ! "$needsterminal" ] && [ ! "$copiousoutput" ]; then
+			printf %s ' > /dev/null 2>&1 '
+		fi
+
+		# Put file contents into stdin if %s is unused
+		case "$cmd" in *%s*);; *)
+			printf %s ' < "$FILENAME" ';;
+		esac
+
+		# Implement copiousoutput
+		[ "$copiousoutput" ] && printf %s " | ${PAGER:-less} "
+
+		[ ! "$needsterminal" ] && printf %s ' & '
+		break
+	done < "$MAILCAP"
+)}
+
+# shellcheck disable=2046
+eval $(select_command)
+
