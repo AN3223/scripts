@@ -47,6 +47,16 @@ fi
 
 MIMETYPE=$($MIMER "$FILENAME")
 
+if [ -t 0 ] && [ -t 1 ]; then
+	HASTERMINAL=1
+fi
+
+if [ ! "$HASTERMINAL" ] && [ ! "$TERMCMD" ]; then
+	echo 'The TERMCMD environment variable must be set to spawn a terminal
+emulator (i.e. xterm -e)' >&2
+	exit 1
+fi
+
 # Recursively replaces %s and %t
 percent_substitute() {
 		case "$1" in
@@ -57,7 +67,7 @@ percent_substitute() {
 				percent_substitute "${1%%%s*}"'${FILENAME}'"${1##*%s}"
 				;;
 			*)
-				printf '%s' "$1"
+				printf %s "$1"
 				return
 				;;
 		esac
@@ -125,6 +135,10 @@ select_command() {(
 		# The rest of this loop generates shell code in stdout
 
 		[ ! "$needsterminal" ] && printf %s ' ( nohup '
+
+		if [ "$needsterminal" ] && [ ! "$HASTERMINAL" ]; then
+			printf %s " $TERMCMD "
+		fi
 
 		percent_substitute "$cmd"
 
