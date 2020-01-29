@@ -1,0 +1,13 @@
+#!/bin/sh
+# This script uses xauth and doas to allow a user access to a display
+# for 24 hours. I run this daily with cron to always allow a user access
+# to my display. If you know of a cleaner solution, please let me know.
+# The xauth man page doesn't seem to say much about the timeout, and no,
+# setting it to a negative number doesn't seem to work.
+
+xauth generate "$2" . trusted timeout $((60*60*24))
+
+xauth list |
+	awk '{print $3}' |
+	doas -nu "$1" xargs -0 xauth add "$2" .
+
