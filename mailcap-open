@@ -126,7 +126,21 @@ select_command() {(
 					;;
 				notes=*)
 					;;
-				print=*) # TODO should this be used?
+				description=*)
+					;;
+				nametemplate=*)
+					;;
+				x11-bitmap=*)
+					;;
+				compose=*)
+					;;
+				composetyped=*)
+					;;
+				print=*)
+					;;
+				textualnewlines=*)
+					;;
+				x-*)
 					;;
 				*)
 					echo "Warning, unrecognized option: $opt" >&2
@@ -165,10 +179,9 @@ select_command() {(
 	done < "$MAILCAP"
 )}
 
-# shellcheck disable=2046
 cmd=$(select_command)
 if [ "$cmd" ]; then
-	eval $cmd
+	eval "$cmd"
 else
 	exit 1
 fi
