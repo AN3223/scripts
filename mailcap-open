@@ -12,24 +12,30 @@
 # actually substituted for a shell variable, not a filename. This is
 # done on purpose to avoid issues with special characters.
 # So don't single quote %s! It will cause errors! You have been warned!
+# Also don't forget to set the TERMCMD environment variable, see below.
 #
 # The following environment variables are used:
 #
+# TERMCMD
+#   The prefix command for spawning programs in a terminal, i.e. xterm
+#   -e for xterm. There is no default, this MUST be set if mailcap-open
+#   isn't being spawned from a terminal.
+#
 # MAILCAPS
-#   the colon-delimited mailcap search path defined in RFC 1524,
+#   The colon-delimited mailcap search path defined in RFC 1524,
 #   defaults to:
 #   ~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
 #
 # MIMER
-#   the command used to get the mimetype of a file, defaults to:
+#   The command used to get the mimetype of a file, defaults to:
 #   xdg-mime query filetype
 #
 # MCO_DOWNLOADER
-#   the command used to download URLs if MCO_HANDLER is unset, defaults to
+#   The command used to download URLs if MCO_HANDLER is unset, defaults to
 #   curl
 #
 # MCO_HANDLER
-#   a command that may override the handling of the file mailcap-open
+#   A command that may override the handling of the file mailcap-open
 #   was invoked with. A handler will be invoked like so:
 #
 #   handler {file | URL}
