@@ -28,7 +28,7 @@
 DOWNLOADER=${DOWNLOADER:-curl}
 MIMER=${MIMER:-xdg-mime query filetype}
 
-export FILENAME="$1"
+FILENAME="$1"
 case "$FILENAME" in # Handle URLs
 	*://*)
 		# FIXME tmp won't be deleted after a crash
