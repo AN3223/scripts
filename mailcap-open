@@ -1,7 +1,9 @@
 #!/bin/sh -ef
-# This is a file opener (like xdg-open) that uses the mailcap file for
-# configuration. The interface is simple:
-# $ mailcap-open FILE
+# This is a file opener that uses the mailcap file for configuration and
+# shares the same CLI as xdg-open:
+#
+# mailcap-open {file | URL}
+#
 # ...and the heavy lifting is done by the mailcap file(s) (see MAILCAPS
 # below).
 #
@@ -13,32 +15,63 @@
 #
 # The following environment variables are used:
 #
-# MAILCAPS: the colon-delimited mailcap search path defined in RFC 1524,
-# defaults to:
-# ~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
+# MAILCAPS
+#   the colon-delimited mailcap search path defined in RFC 1524,
+#   defaults to:
+#   ~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
 #
-# MIMER: the command used to get the mimetype of a file, defaults to:
-# xdg-mime query filetype
+# MIMER
+#   the command used to get the mimetype of a file, defaults to:
+#   xdg-mime query filetype
 #
-# DOWNLOADER: the command used to download from URLs, defaults to curl
-# (expects result to be printed to stdout)
+# MCO_DOWNLOADER
+#   the command used to download URLs if MCO_HANDLER is unset, defaults to
+#   curl
+#
+# MCO_HANDLER
+#   a command that may override the handling of the file mailcap-open
+#   was invoked with. A handler will be invoked like so:
+#
+#   handler {file | URL}
+#
+#   If MCO_HANDLER exits with an error code then mailcap-open will do an
+#   early exit (never interpreting the mailcap file). Otherwise the
+#   standard output of MCO_HANDLER will be captured into a temporary file
+#   which will serve as the replacement for %s in the mailcap file.
+#
+#   If MCO_HANDLER exits successfully without any output then the mailcap
+#   will be interpreted normally.
+#
+#   If MCO_HANDLER is unset then mailcap-open will default to using
+#   MCO_DOWNLOADER to handle URLs, and use the mailcap file for handling
+#   normal files.
+#
+#   Ideally a handler should always throw an error in the case of a URL.
 
-# TODO allow the user to configure how URLs are handled
+FILENAME=$1
+MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl}
 
-DOWNLOADER=${DOWNLOADER:-curl}
-MIMER=${MIMER:-xdg-mime query filetype}
-
-FILENAME="$1"
-case "$FILENAME" in # Handle URLs
-	*://*)
-		# FIXME tmp won't be deleted after a crash
-		tmp=$(mktemp)
-		$DOWNLOADER "$FILENAME" > "$tmp"
-		FILENAME="$tmp"
-		;;
-	*)
-		;;
-esac
+# FIXME tmp won't be deleted after a crash
+tmp=$(mktemp)
+if [ "$MCO_HANDLER" ]; then
+	if ! $MCO_HANDLER "$FILENAME" > "$tmp"; then
+		rm -f "$tmp"
+		exit
+	elif [ "$(cat "$tmp")" ]; then
+		FILENAME=$tmp
+	else
+		rm -f "$tmp"
+	fi
+else
+	case "$FILENAME" in
+		*://*)
+			$MCO_DOWNLOADER "$FILENAME" > "$tmp"
+			FILENAME=$tmp
+			;;
+		*)
+			;;
+	esac
+fi
 
 if [ ! "$MAILCAPS" ]; then
 	MAILCAPS="$HOME/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap"
@@ -56,10 +89,13 @@ if [ ! "$(cat "$MAILCAP")" ]; then
 	exit 1
 fi
 
+MIMER=${MIMER:-xdg-mime query filetype}
 MIMETYPE=$($MIMER "$FILENAME")
 
 if [ -t 0 ] && [ -t 1 ]; then
 	HASTERMINAL=1
+else
+	HASTERMINAL=
 fi
 
 if [ ! "$HASTERMINAL" ] && [ ! "$TERMCMD" ]; then
@@ -133,24 +169,15 @@ select_command() {(
 						exit 1 # go to next mimetype
 					fi
 					;;
-				notes=*)
-					;;
-				description=*)
-					;;
-				nametemplate=*)
-					;;
-				x11-bitmap=*)
-					;;
-				compose=*)
-					;;
-				composetyped=*)
-					;;
-				print=*)
-					;;
-				textualnewlines=*)
-					;;
-				x-*)
-					;;
+				notes=*) ;;
+				description=*) ;;
+				nametemplate=*) ;;
+				x11-bitmap=*) ;;
+				compose=*) ;;
+				composetyped=*) ;;
+				print=*) ;;
+				textualnewlines=*) ;;
+				x-*) ;;
 				*)
 					echo "Warning, unrecognized option: $opt" >&2
 					;;
@@ -192,6 +219,7 @@ cmd=$(select_command)
 if [ "$cmd" ]; then
 	eval "$cmd"
 else
+	rm -f "$tmp"
 	exit 1
 fi
 
