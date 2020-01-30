@@ -36,14 +36,19 @@ case "$FILENAME" in # Handle URLs
 		;;
 esac
 
-if [ -r "$HOME/.mailcap-open" ]; then
-	MAILCAP="$HOME/.mailcap-open"
-elif [ -r "$HOME/.mailcap" ]; then
-	MAILCAP="$HOME/.mailcap"
-elif [ -r /etc/mailcap ]; then
-	MAILCAP=/etc/mailcap
-else
-	echo 'Unable to find mailcap file' >&2
+if [ ! "$MAILCAPS" ]; then
+	MAILCAPS="$HOME/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap"
+fi
+
+MAILCAP=$(mktemp)
+(
+	IFS=:
+	for f in $MAILCAPS; do
+		cat "$f" >> "$MAILCAP" 2> /dev/null || :
+	done
+)
+if [ ! "$(cat "$MAILCAP")" ]; then
+	echo 'No mailcap files (or mailcap files are empty)' >&2
 	exit 1
 fi
 
@@ -186,4 +191,4 @@ else
 	exit 1
 fi
 
-
+rm -f "$MAILCAP"
