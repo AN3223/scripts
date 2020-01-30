@@ -1,23 +1,27 @@
 #!/bin/sh -ef
 # This is a file opener (like xdg-open) that uses the mailcap file for
-# configuration. The interface is extremely simple:
-# mailcap-open FILE
-# ...and the rest is handled by the mailcap file (~/.mailcap-open or
-# ~/.mailcap or /etc/ mailcap).
-
+# configuration. The interface is simple:
+# $ mailcap-open FILE
+# ...and the heavy lifting is done by the mailcap file(s) (see MAILCAPS
+# below).
+#
+# IMPORTANT: Occurrences of %s must be double quoted (or unquoted if you
+# want word-splitting) in your mailcap files. This is because it is
+# actually substituted for a shell variable, not a filename. This is
+# done on purpose to avoid issues with special characters.
+# So don't single quote %s! It will cause errors! You have been warned!
+#
 # The following environment variables are used:
 #
-# MIMER: the command used to get the mimetype of a file, defaults to
-# "xdg-mime query filetype"
+# MAILCAPS: the colon-delimited mailcap search path defined in RFC 1524,
+# defaults to:
+# ~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
+#
+# MIMER: the command used to get the mimetype of a file, defaults to:
+# xdg-mime query filetype
 #
 # DOWNLOADER: the command used to download from URLs, defaults to curl
 # (expects result to be printed to stdout)
-#
-# One quirk you should know is that %s is not truly replaced with the
-# proper value, but is instead replaced with a variable containing the
-# proper value. This is done on purpose to avoid quoting mishaps. So
-# when you use %s in your mailcap file you should double quote it like
-# this "%s"
 
 # TODO allow the user to configure how URLs are handled
 
