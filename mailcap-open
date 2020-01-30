@@ -70,18 +70,18 @@ fi
 
 # Recursively replaces %s and %t
 percent_substitute() {
-		case "$1" in
-			*%t*)
-				percent_substitute "${1%%%t*}${FILE_MIMETYPE}${1##*%t}"
-				;;
-			*%s*)
-				percent_substitute "${1%%%s*}"'${FILENAME}'"${1##*%s}"
-				;;
-			*)
-				printf %s "$1"
-				return
-				;;
-		esac
+	case "$1" in
+		*%t*)
+			percent_substitute "${1%%%t*}${FILE_MIMETYPE}${1##*%t}"
+			;;
+		*%s*)
+			percent_substitute "${1%%%s*}"'${FILENAME}'"${1##*%s}"
+			;;
+		*)
+			printf %s "$1"
+			return
+			;;
+	esac
 }
 
 # Strips surrounding whitespace from a string
@@ -112,8 +112,8 @@ select_command() {(
 		# Skip non-matching mimetypes
 		if [ "$FILE_MIMETYPE" = "$MIMETYPE" ]; then
 			:
-		elif [ "$(dirname "$FILE_MIMETYPE")" = "$(dirname "$MIMETYPE")" ] && \
-			[ "$(basename "$FILE_MIMETYPE")" = '*' ]; then
+		elif [ "$(dirname "$FILE_MIMETYPE")" = "$(dirname "$MIMETYPE")" ] \
+			&& [ "$(basename "$FILE_MIMETYPE")" = '*' ]; then
 				:
 		else
 			continue
