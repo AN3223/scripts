@@ -171,7 +171,7 @@ select_command() {(
 					copiousoutput=1
 					;;
 				test=*)
-					if ! eval "${opt#test=}"; then
+					if ! eval "${opt#test=}" > /dev/null 2>&1; then
 						exit 1 # go to next mimetype
 					fi
 					;;
