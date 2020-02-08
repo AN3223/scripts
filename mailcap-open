@@ -40,35 +40,29 @@
 #
 #   handler {file | URL}
 #
-#   If MCO_HANDLER exits with an error code then mailcap-open will do an
-#   early exit (never interpreting the mailcap file). Otherwise the
-#   standard output of MCO_HANDLER will be captured into a temporary file
-#   which will serve as the replacement for %s in the mailcap file.
+#   If MCO_HANDLER exits with an error code then mailcap-open will
+#   assume the handler has already opened the file and mailcap-open will
+#   do an early exit (never interpreting the mailcap file).
 #
-#   If MCO_HANDLER exits successfully without any output then the mailcap
-#   will be interpreted normally.
+#   If MCO_HANDLER exits successfully then the mailcap will be
+#   interpreted as normal.
 #
 #   If MCO_HANDLER is unset then mailcap-open will default to using
 #   MCO_DOWNLOADER to handle URLs, and use the mailcap file for handling
 #   normal files.
 #
-#   Ideally a handler should always throw an error in the case of a URL.
+#   Ideally a custom handler should always throw an error in the case of
+#   a URL.
+#
 
 FILENAME=$1
 MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl}
 
-# FIXME tmp won't be deleted after a crash
-tmp=$(mktemp)
 if [ "$MCO_HANDLER" ]; then
-	if ! $MCO_HANDLER "$FILENAME" > "$tmp"; then
-		rm -f "$tmp"
-		exit
-	elif [ "$(cat "$tmp")" ]; then
-		FILENAME=$tmp
-	else
-		rm -f "$tmp"
-	fi
+	$MCO_HANDLER "$FILENAME" || exit
 else
+	# FIXME tmp won't be deleted after a crash
+	tmp=$(mktemp)
 	case "$FILENAME" in
 		*://*)
 			$MCO_DOWNLOADER "$FILENAME" > "$tmp"
