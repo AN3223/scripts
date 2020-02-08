@@ -1,12 +1,25 @@
 #!/bin/sh -e
-
 # /etc/cron.weekly/adblock-update
+#
+# This script expects the following files:
+# /etc/hosts.allowed
+#   a newline-separated list of IP addresses to be allowed in the
+#   /etc/hosts file
+# /etc/hosts.include
+#   will be appended to the top of /etc/hosts (prior to interpreting
+#   hosts.allowed)
+# /etc/hosts.exclude
+#   a newline-separated list of domains to exclude from /etc/hosts
+#
 
 # Ensure we don't use an old file
 rm -f /etc/hosts.pending
 
 # Timestamp it
 date +'# curled on %c' >> /etc/hosts.pending
+
+# Include /etc/hosts.include
+[ -r /etc/hosts.include ] && cat /etc/hosts.include >> /etc/hosts.pending
 
 # Fetch it
 curl -Ss https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
@@ -16,25 +29,40 @@ curl -Ss https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
 #printf '%s\n' '8.8.8.8 bogus-site.com' >> /etc/hosts.pending
 
 # Verify it
-awkexp='NR == FNR { allowed[$0]; next }
+if [ -r /etc/hosts.allowed ]; then
+	awkexp='NR == FNR { allowed[$0]; next }
 
-# If an IP is not in the list of allowed IPs then print it and exit
-!($1 in allowed) && ! /\s*#/ && ! /^\s*$/ {
-	print $1
-	exit
-}
-'
-disallowed=$(awk "$awkexp" /etc/hosts.allowed /etc/hosts.pending)
-if [ "$disallowed" ]; then
-	echo "$disallowed not allowed, see /etc/hosts.pending" >&2
-	exit 1
+	# If an IP is not in the list of allowed IPs then print it and exit
+	!($1 in allowed) && ! /\s*#/ && ! /^\s*$/ {
+		print $1
+		exit
+	}
+	'
+	disallowed=$(awk "$awkexp" /etc/hosts.allowed /etc/hosts.pending)
+	if [ "$disallowed" ]; then
+		echo "$disallowed not allowed, see /etc/hosts.pending" >&2
+		exit 1
+	fi
 fi
 
-# Block sites from /etc/hosts.include
-while read -r site; do
-	printf '0.0.0.0 %s\n' "$site" >> /etc/hosts.pending
-done < /etc/hosts.include
+if [ -r /etc/hosts.exclude ]; then
+	tmp=$(mktemp)
+	while read -r line; do
+		# skip comments
+		if [ ! "${line##\#*}" ]; then
+			printf '%s\n' "$line" >> "$tmp"
+			continue
+		fi
+
+		domain=$(printf '%s\n' "$line" | cut -d ' ' -f 2)
+		if ! grep -Fxq "$domain" /etc/hosts.exclude; then
+			printf '%s\n' "$line" >> "$tmp"
+		fi
+	done < /etc/hosts.pending
+	mv "$tmp" /etc/hosts.pending
+fi
 
 # Finalize it
-mv /etc/hosts.pending /etc/hosts
+cat /etc/hosts.pending > /etc/hosts
+rm -f /etc/hosts.pending
 
