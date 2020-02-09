@@ -95,7 +95,7 @@ MAILCAP=$(mktemp)
 		cat "$f" >> "$MAILCAP" 2> /dev/null || :
 	done
 )
-if [ ! "$(cat "$MAILCAP")" ]; then
+if [ ! -s "$MAILCAP" ]; then
 	echo 'No mailcap files (or mailcap files are empty)' >&2
 	exit 1
 fi
