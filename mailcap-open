@@ -30,6 +30,11 @@
 #   The command used to get the mimetype of a file, defaults to:
 #   xdg-mime query filetype
 #
+# MCO_NEEDSTERMINAL
+#   If set, mailcap-open will always act like needsterminal is set.
+#   Useful for preventing mailcap-open from opening the file in the
+#   background.
+#
 # MCO_DOWNLOADER
 #   The command used to download URLs if MCO_HANDLER is unset, defaults to
 #   curl
@@ -183,6 +188,8 @@ select_command() {(
 					;;
 			esac
 		done || continue
+
+		[ "$MCO_NEEDSTERMINAL" ] && needsterminal=1
 
 		# The rest of this loop generates shell code in stdout
 
