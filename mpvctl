@@ -2,11 +2,16 @@
 # This is a script for controlling mpv via a socket located at /tmp/mpvctl
 # Be sure to add input-ipc-server=/tmp/mpvctl to your mpv.conf OR use my
 # multisocket.lua script if you want to control multiple mpv processes.
+#
 # Requires socat
+#
 
 err()      { printf 'mpvctl: %s\n' "$1" >&2; exit 1;   }
 mpv_send() {
 	for socket in /tmp/mpvctl*; do
+		# skip non-sockets and failed globs
+		[ ! -S "$socket" ] && continue
+
 		printf '%s\n' "$1" | socat - "$socket"
 	done
 }
