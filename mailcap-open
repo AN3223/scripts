@@ -1,11 +1,12 @@
 #!/bin/sh -ef
 # This is a file opener that uses the mailcap file for configuration and
-# shares the same CLI as xdg-open:
+# shares (mostly) the same CLI as xdg-open:
 #
-# mailcap-open {file | URL}
+# mailcap-open [file | URL]
 #
 # ...and the heavy lifting is done by the mailcap file(s) (see MAILCAPS
-# below).
+# below). If the file is omitted or - then the standard input will be
+# read instead.
 #
 # IMPORTANT: Occurrences of %s must be double quoted (or unquoted if you
 # want word-splitting) in your mailcap files. This is because it is
@@ -41,7 +42,8 @@
 #
 # MCO_HANDLER
 #   A command that may override the handling of the file mailcap-open
-#   was invoked with. A handler will be invoked like so:
+#   was invoked with (unless the file was stdin). A handler will be
+#   invoked like so:
 #
 #   handler {file | URL}
 #
@@ -60,13 +62,17 @@
 #   a URL.
 #
 
-FILENAME=$1
+FILENAME=${1:-'-'}
 MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl}
 
-if [ "$MCO_HANDLER" ]; then
+# FIXME tmp won't be deleted after a crash
+if [ "$FILENAME" = '-' ]; then
+	tmp=$(mktemp)
+	cat - > "$tmp"
+	FILENAME=$tmp
+elif [ "$MCO_HANDLER" ]; then
 	$MCO_HANDLER "$FILENAME" || exit
 else
-	# FIXME tmp won't be deleted after a crash
 	tmp=$(mktemp)
 	case "$FILENAME" in
 		*://*)
