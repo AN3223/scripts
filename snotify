@@ -29,15 +29,15 @@
 NOTIFY_FILE=$HOME/.snotify
 
 # try to use a good lock implementation, fall back to something dirtier
-LOCKN=$NOTIFY_FILE.lock
+LOCK=$NOTIFY_FILE.lock
 if command -v flock > /dev/null 2>&1; then
-	exec 9> "$LOCKN"
+	exec 9> "$LOCK"
 	while ! flock -n 9; do
 		sleep 0.1
 	done
 else
-	trap 'rm -f "$LOCKN"' EXIT QUIT HUP INT TERM ABRT
-	while ! (set -C; : > "$LOCKN"); do
+	trap 'rm -f "$LOCK"' EXIT QUIT HUP INT TERM ABRT
+	while ! (set -C; : > "$LOCK"); do
 		sleep 0.1
 	done
 fi
