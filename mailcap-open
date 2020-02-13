@@ -177,7 +177,8 @@ select_command() {(
 					;;
 				test=*)
 					if ! eval "${opt#test=}" > /dev/null 2>&1; then
-						exit 1 # go to next mimetype
+						next=1
+						break
 					fi
 					;;
 				notes=*) ;;
@@ -193,7 +194,12 @@ select_command() {(
 					echo "Warning, unrecognized option: $opt" >&2
 					;;
 			esac
-		done || continue
+		done
+
+		if [ "$next" ]; then
+			next=
+			continue
+		fi
 
 		[ "$MCO_NEEDSTERMINAL" ] && needsterminal=1
 
