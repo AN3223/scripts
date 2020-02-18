@@ -37,7 +37,8 @@ fi
 
 # Build
 for pkg in $XDISTUPGRADE_PKGS; do
-	./xbps-src -CE pkg "$pkg"
+	# FIXME always compiles, even when not necessary
+	./xbps-src -C pkg "$pkg"
 done
 
 # Install
