@@ -1,47 +1,100 @@
 #!/bin/sh -ef
-# This script builds/installs a list of packages using xbps-src. If a package
-# is already built/installed then it will be ignored. If XBPS_DISTDIR hasn't
-# been bootstrapped then it will be bootstrapped. This script won't manage
-# your git repository for you.
+# This script does:
+# 1. Build+install a select list of packages via xbps-src.
+# 2. Handle bootstrapping if necessary
 #
-# Requires:
-# 1) xtools to be installed
-# 2) xdistdir should be able to find a void-packages repository (i.e. set the
-#    XBPS_DISTDIR environment variable)
-# 3) XDISTUPGRADE_PKGS to be set to a space-seperated list of packages, the
-#    variable should be defined in $XBPS_DISTDIR/etc/conf or ~/.xbps-src.conf
-#    (searched in that order)
+# This script does not:
+# 1. Manage your git repository for you.
+#
+# This script requires:
+# 1. xtools
+# 2. A void-packages repository locatable by xdistdir (i.e. the
+#    XBPS_DISTDIR environment variable, or the pwd)
+# 3. A variable named XDISTUPGRADE_PKGS defined in ~/.xbps-src.conf or
+#    $XBPS_DISTDIR/etc/conf containing a space-separated list of
+#    packages (i.e. XDISTUPGRADE_PKGS='sway i3' to compile sway and i3)
 
-xdistdir="$(xdistdir)"
-cd "$xdistdir"
+# shellcheck disable=SC2086 # (globbing is disabled)
+
+cd "$(xdistdir)"
+
+# the following snippet of code was lifted from xi
+branch=$(git symbolic-ref -q --short HEAD 2>/dev/null)
+addrepo="
+	--repository=hostdir/binpkgs/$branch
+	--repository=../hostdir/binpkgs/$branch
+	--repository=../../hostdir/binpkgs/$branch
+	--repository=hostdir/binpkgs/$branch/nonfree
+	--repository=../hostdir/binpkgs/$branch/nonfree
+	--repository=../../hostdir/binpkgs/$branch/nonfree
+	--repository=hostdir/binpkgs/$branch/multilib
+	--repository=../hostdir/binpkgs/$branch/multilib
+	--repository=../../hostdir/binpkgs/$branch/multilib
+	--repository=hostdir/binpkgs/$branch/multilib/nonfree
+	--repository=../hostdir/binpkgs/$branch/multilib/nonfree
+	--repository=../../hostdir/binpkgs/$branch/multilib/nonfree
+	--repository=hostdir/binpkgs/$branch/debug
+	--repository=../hostdir/binpkgs/$branch/debug
+	--repository=../../hostdir/binpkgs/$branch/debug
+	--repository=hostdir/binpkgs
+	--repository=../hostdir/binpkgs
+	--repository=../../hostdir/binpkgs
+	--repository=hostdir/binpkgs/nonfree
+	--repository=../hostdir/binpkgs/nonfree
+	--repository=../../hostdir/binpkgs/nonfree
+	--repository=hostdir/binpkgs/multilib
+	--repository=../hostdir/binpkgs/multilib
+	--repository=../../hostdir/binpkgs/multilib
+	--repository=hostdir/binpkgs/multilib/nonfree
+	--repository=../hostdir/binpkgs/multilib/nonfree
+	--repository=../../hostdir/binpkgs/multilib/nonfree
+	--repository=hostdir/binpkgs/debug
+	--repository=../hostdir/binpkgs/debug
+	--repository=../../hostdir/binpkgs/debug
+"
 
 # Source the xbps-src config file
 # shellcheck disable=SC1090
-if [ -f "$xdistdir"/etc/conf ]; then
-	. "$xdistdir"/etc/conf
+if [ -f ./etc/conf ]; then
+	. ./etc/conf
 elif [ -f ~/.xbps-src.conf ]; then
 	. ~/.xbps-src.conf
 else
-	. "$xdistdir"/etc/defaults.conf # last-ditch effort
+	. ./etc/defaults.conf # last-ditch effort
 fi
 
 # Verify XDISTUPGRADE_PKGS has been set
 [ "$XDISTUPGRADE_PKGS" ]
 
-# Bootstrap
-if [ -d ./masterdir ]; then
-	./xbps-src bootstrap-update
-else
-	./xbps-src binary-bootstrap
-fi
+# Bootstrap if necessary
+./xbps-src binary-bootstrap
 
-# Build
+get_template_version() {
+	info=$(./xbps-src show "$1")
+	version=$(printf '%s\n' "$info" | grep ^version: | cut -f 2)
+	revision=$(printf '%s\n' "$info" | grep ^revision: | cut -f 2)
+	printf '%s-%s_%s\n' "$1" "$version" "$revision"
+}
+
+get_local_repo_version() {
+	xbps-query -p pkgver -i $addrepo "$1"
+}
+
+# Build the specified packages if either of these conditions are met:
+# 1. The package isn't already built in the local repo
+# 2. The package version from the local repo doesn't match the package
+#    version in the package's template file
+rebuilt_pkgs=
 for pkg in $XDISTUPGRADE_PKGS; do
-	# FIXME always compiles, even when not necessary
-	./xbps-src -C pkg "$pkg"
+	tver=$(get_template_version "$pkg")
+	lrver=$(get_local_repo_version "$pkg") || :
+
+	if [ "$tver" != "$lrver" ] || [ ! "$lrver" ]; then
+		./xbps-src pkg "$pkg"
+		rebuilt_pkgs="$rebuilt_pkgs $pkg"
+	fi
 done
 
-# Install
-# shellcheck disable=SC2086 # (globbing is disabled)
-xi $XDISTUPGRADE_PKGS
+# If rebuilt, install new package
+[ "$rebuilt_pkgs" ] && xi -f $rebuilt_pkgs
 
