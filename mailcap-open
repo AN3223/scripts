@@ -63,7 +63,7 @@
 #
 
 FILENAME=${1:-'-'}
-MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl}
+MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl --}
 
 # FIXME tmp won't be deleted after a crash
 if [ "$FILENAME" = '-' ]; then
