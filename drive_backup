@@ -1,0 +1,32 @@
+#!/bin/sh -e
+# Use the drive CLI tool and gpg to backup files/directories to Google
+# Drive, encrypting + (highly) compressing them before sending them out
+#
+# This is meant for unattended use, so gpg should not need to prompt for
+# a passphrase.
+#
+
+encrypt() {
+	gpg2 --encrypt --default-recipient-self \
+		-z 9 --batch --no-tty --yes
+}
+
+push() {(
+	cd "$DRIVEDIR"
+	drive push -no-prompt -force -piped "$@"
+)}
+
+if [ ! "$DRIVEDIR" ]; then
+	echo 'Set $DRIVEDIR to point to the mount directory for drive' >&2
+	exit 1
+fi
+
+for path; do
+	basename=$(basename "$path")
+	if [ -f "$path" ]; then
+		encrypt < "$path" | push "$basename.gpg"
+	elif [ -d "$path" ]; then
+		tar -c "$path" | encrypt | push "$basename.tar.gpg"
+	fi
+done
+
