@@ -1,0 +1,7 @@
+#!/bin/sh -Ce
+# A shell script for making shell scripts. Automates creating a shebang +
+# setting the execute bit. Won't overwrite existing files.
+
+echo '#!/bin/sh -e' > "$1"
+chmod u+x "$1"
+
