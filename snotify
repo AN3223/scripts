@@ -28,6 +28,11 @@
 
 NOTIFY_FILE=$HOME/.snotify
 
+# read stdin before grabbing lock, since reading stdin may take a while
+if [ "$1" = '-' ]; then
+	STDIN=$(cat -)
+fi
+
 # try to use a good lock implementation, fall back to something dirtier
 LOCK=$NOTIFY_FILE.lock
 if command -v flock > /dev/null 2>&1; then
@@ -66,7 +71,7 @@ fi
 		;;
 	-)
 		# avoid recording duplicate messages
-		cat - | while read -r line; do
+		printf '%s\n' "$STDIN" | while read -r line; do
 			if grep -Fxq "$line" "$NOTIFY_FILE"; then
 				continue
 			fi
