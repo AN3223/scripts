@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 # Transparently edit a gpg encrypted file. I'm not a gpg expert, so
 # don't trust this script and please let me know if I'm doing something
 # wrong.
@@ -7,16 +7,20 @@ export TMPDIR=/dev/shm/
 trap 'rm -rf "$tmpd"' EXIT TERM QUIT HUP INT ABRT
 tmpd=$(mktemp -d)
 
-gpg='gpg2 --no-tty --batch --yes'
+gpg() { gpg2 --no-tty --batch --yes "$@"; }
 
-$gpg -d "$1" > "$tmpd/plain"
+if [ -f "$1" ]; then
+	gpg -d "$1" > "$tmpd/plain"
+else
+	: >> "$tmpd/plain"
+fi
 
 cat "$tmpd/plain" > "$tmpd/plain_copy"
 
 ${EDITOR:-vi} "$tmpd/plain"
 
 if ! cmp -s "$tmpd/plain" "$tmpd/plain_copy"; then
-	$gpg --default-recipient-self -a -o "$1" -e "$tmpd/plain"
+	gpg --default-recipient-self -o "$1" -e "$tmpd/plain"
 else
 	echo 'File unchanged, exiting...' >&2
 fi
