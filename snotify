@@ -31,6 +31,7 @@ NOTIFY_FILE=$HOME/.snotify
 # read stdin before grabbing lock, since reading stdin may take a while
 if [ "$1" = '-' ]; then
 	STDIN=$(cat -)
+	[ ! "$STDIN" ] && exit
 fi
 
 # try to use a good lock implementation, fall back to something dirtier
@@ -77,6 +78,7 @@ fi
 			fi
 			printf '%s\n' "$line" >> "$NOTIFY_FILE"
 		done
+		exit
 		;;
 	*)
 		echo 'Invalid argument' >&2
