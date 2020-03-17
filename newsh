@@ -4,4 +4,5 @@
 
 echo '#!/bin/sh -e' > "$1"
 chmod u+x "$1"
+exec ${EDITOR:-vi} "$1"
 
