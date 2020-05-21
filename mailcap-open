@@ -205,7 +205,7 @@ select_command() {(
 
 		# The rest of this loop generates shell code in stdout
 
-		[ ! "$needsterminal" ] && printf %s ' ( nohup '
+		[ ! "$needsterminal" ] && printf %s ' ( setsid '
 
 		if [ "$needsterminal" ] && [ ! "$HASTERMINAL" ]; then
 			printf %s " $TERMCMD "
