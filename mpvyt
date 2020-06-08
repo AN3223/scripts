@@ -31,5 +31,5 @@ if [ ! "$*" ]; then
 	exit 1
 fi
 
-mpv --no-resume-playback ytdl://ytsearch"${n:-5}":"$*"
+mpv --force-window=immediate --no-resume-playback ytdl://ytsearch"${n:-5}":"$*"
 
