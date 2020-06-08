@@ -31,7 +31,7 @@ NOTIFY_FILE=$HOME/.snotify
 # read stdin before grabbing lock, since reading stdin may take a while
 if [ "$1" = '-' ]; then
 	STDIN=$(cat -)
-	[ ! "$STDIN" ] && exit
+	[ ! "$STDIN" ] && exit 1
 fi
 
 # try to use a good lock implementation, fall back to something dirtier
@@ -53,22 +53,22 @@ fi
 		shift 1
 		# avoid recording duplicate messages
 		if grep -Fxq "$*" "$NOTIFY_FILE"; then
-			exit
+			exit 0
 		fi
 
 		printf '%s\n' "$*" >> "$NOTIFY_FILE";
-		exit
+		exit 0
 		;;
 	-d)
 		tmp=$(mktemp)
 		sed '$d' "$NOTIFY_FILE" > "$tmp"
 		cat "$tmp" > "$NOTIFY_FILE"
 		rm "$tmp"
-		exit
+		exit 0
 		;;
 	-r)
 		rm "$NOTIFY_FILE"
-		exit
+		exit 0
 		;;
 	-)
 		# avoid recording duplicate messages
@@ -78,7 +78,7 @@ fi
 			fi
 			printf '%s\n' "$line" >> "$NOTIFY_FILE"
 		done
-		exit
+		exit 0
 		;;
 	*)
 		echo 'Invalid argument' >&2

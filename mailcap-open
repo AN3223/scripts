@@ -71,7 +71,7 @@ if [ "$FILENAME" = '-' ]; then
 	cat - > "$tmp"
 	FILENAME=$tmp
 elif [ "$MCO_HANDLER" ]; then
-	$MCO_HANDLER "$FILENAME" || exit
+	$MCO_HANDLER "$FILENAME" || exit 0
 else
 	tmp=$(mktemp)
 	case "$FILENAME" in
