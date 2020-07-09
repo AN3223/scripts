@@ -24,6 +24,9 @@ PATH = [x for x in PARSED.path.split('/') if x]
 if PATH[0] == 'user':
     ID = PATH[1]
     RSS = f"https://youtube.com/feeds/videos.xml?user={ID}"
+elif PATH[0] == 'c':
+    ID = PATH[1]
+    RSS = f"https://youtube.com/feeds/videos.xml?user={ID}"
 elif PATH[0] == 'channel':
     ID = PATH[1]
     RSS = f"https://youtube.com/feeds/videos.xml?channel_id={ID}"
