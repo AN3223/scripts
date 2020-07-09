@@ -48,44 +48,42 @@ else
 	done
 fi
 
-[ "$*" ] && case "$1" in
-	-n)
-		shift 1
-		# avoid recording duplicate messages
-		if grep -Fxq "$*" "$NOTIFY_FILE"; then
-			exit 0
-		fi
-
-		printf '%s\n' "$*" >> "$NOTIFY_FILE";
-		exit 0
-		;;
-	-d)
-		tmp=$(mktemp)
-		sed '$d' "$NOTIFY_FILE" > "$tmp"
-		cat "$tmp" > "$NOTIFY_FILE"
-		rm "$tmp"
-		exit 0
-		;;
-	-r)
-		rm "$NOTIFY_FILE"
-		exit 0
-		;;
-	-)
-		# avoid recording duplicate messages
-		printf '%s\n' "$STDIN" | while read -r line; do
-			if grep -Fxq "$line" "$NOTIFY_FILE"; then
-				continue
+if [ "$*" ]; then
+	case "$1" in
+		-n)
+			shift 1
+			# avoid recording duplicate messages
+			if grep -Fxq "$*" "$NOTIFY_FILE"; then
+				exit 0
 			fi
-			printf '%s\n' "$line" >> "$NOTIFY_FILE"
-		done
-		exit 0
-		;;
-	*)
-		echo 'Invalid argument' >&2
-		exit 1
-		;;
-esac
 
-: >> "$NOTIFY_FILE"
-tail -n 1 "$NOTIFY_FILE"
+			printf '%s\n' "$*" >> "$NOTIFY_FILE";
+			;;
+		-d)
+			tmp=$(mktemp)
+			sed '$d' "$NOTIFY_FILE" > "$tmp"
+			cat "$tmp" > "$NOTIFY_FILE"
+			rm "$tmp"
+			;;
+		-r)
+			rm "$NOTIFY_FILE"
+			;;
+		-)
+			# avoid recording duplicate messages
+			printf '%s\n' "$STDIN" | while read -r line; do
+				if grep -Fxq "$line" "$NOTIFY_FILE"; then
+					continue
+				fi
+				printf '%s\n' "$line" >> "$NOTIFY_FILE"
+			done
+			;;
+		*)
+			echo 'Invalid argument' >&2
+			exit 1
+			;;
+	esac
+else
+	: >> "$NOTIFY_FILE"
+	tail -n 1 "$NOTIFY_FILE"
+fi
 
