@@ -1,0 +1,27 @@
+#!/bin/sh -e
+#
+# Digital flashcards for memorizing things
+#
+# Usage:
+#   flashcard file
+#
+# The lines of the file should be formatted like front=back where
+# "front" is the information to be presented to you and "back" is the
+# corresponding information you should reply with. The script will tell
+# you whether or not you were correct, and present the correct answer to
+# you if you didn't get it.
+#
+
+while :; do
+	words=$(shuf < "$1" | head -n 1)
+	front=${words%%=*}
+	back=${words##*=}
+	echo "$front"
+	printf '> '
+	read response
+	if [ "$response" = "$back" ]; then
+		printf '\n----------------\nCorrect!\n----------------\n\n'
+	else
+		printf '\n----------------\nThe correct answer was %s\n----------------\n\n' "$back"
+	fi
+done
