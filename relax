@@ -1,10 +1,58 @@
 #!/bin/sh
-# Plays a noise similar to a fan or heavy rain
-# Requires sox
+# Plays brown noise that fades in at the start, then continues with a
+# couple of slow, shallow, tremolo filters that are slightly offset from
+# each other to give the appearance of random subtle "waves"
+#
+# Usage:
+# relax [backend]
+#
+# If a backend isn't specified then one will be automatically selected
+# in the same order as below:
+# --ffplay (requires ffmpeg compiled with SDL)
+# --mpv (requires mpv)
+# --ffmpeg (requires ffmpeg, only plays into alsa)
+# --sox (requires sox)
 
-play -Gn \
-	synth brownnoise \
-	tremolo 0.05 10 \
-	tremolo 0.08 20 \
-	fade t 45
+lavfifilter="anoisesrc=color=brown,afade=type=in:duration=45,tremolo=f=0.1:d=0.1,tremolo=f=0.16:d=0.2"
+
+case "$1" in
+	--ffplay) backend=ffplay ;;
+	--mpv)    backend=mpv ;;
+	--sox)    backend=sox ;;
+	--ffmpeg) backend=ffmpeg ;;
+	*)
+		if command -v ffplay > /dev/null 2>&1; then
+			backend=ffplay
+		elif command -v mpv > /dev/null 2>&1; then
+			backend=mpv
+		elif command -v ffmpeg > /dev/null 2>&1; then
+			backend=ffmpeg
+		elif command -v play > /dev/null 2>&1; then
+			backend=sox
+		else
+			printf '%s\n' "error: couldn't find a suitable backend. please install one of the following:" \
+				'mpv' 'ffmpeg' 'sox' >&2
+			exit 1
+		fi
+		;;
+esac
+
+case "$backend" in
+	ffplay)
+		ffplay -nodisp -f lavfi -i "$lavfifilter"
+		;;
+	mpv)
+		mpv --no-resume-playback av://lavfi:"$lavfifilter"
+		;;
+	ffmpeg)
+		ffmpeg -f lavfi -i "$lavfifilter" -f alsa default
+		;;
+	sox)
+		play -Gn \
+			synth brownnoise \
+			tremolo 0.10 10 \
+			tremolo 0.16 20 \
+			fade t 45
+		;;
+esac
 
