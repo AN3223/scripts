@@ -1,0 +1,133 @@
+#!/bin/sh -ef
+# shellcheck disable=SC2086,SC1010
+#
+# Simple script to send/receive mail using busybox and openssl w/
+# SMTP/POP3.
+#
+# When any arguments are provided, this script will act like sendmail,
+# all arguments will be treated as recipient email addresses and the
+# standard input will be treated as mail to be sent.
+#
+# The following variables are required:
+#
+# MAILMAN_USERNAME:
+# 	Your username, usually your email address.
+# MAILMAN_URL:
+# 	The URL of the server (i.e. smtp.gmail.com:587). The port can
+# 	instead be specified with MAILMAN_PORT if desired.
+# MAILMAN_PASS_CMD or MAILMAN_PASS:
+# 	MAILMAN_PASS_CMD should be a command that will print your password.
+# 	Alternatively you can use MAILMAN_PASS to feed the password directly to
+# 	this script.
+#
+# The following variables are optional:
+#
+# MAILDIR
+# 	(POP only) The maildir to drop new mail into. Will default to ~/Mail
+# MAILMAN_MAIL_FROM
+# 	(SMTP only) This should be the email address your are sending mail
+# 	from.  This	will default to your MAILMAN_USERNAME.
+# MAILMAN_SSL_LEVEL
+# 	Possible values:
+#		0 = Disable all SSL/TLS
+#		1 = Explicit TLS
+#		2 = Implicit TLS
+# 	If unset the default will be 2.
+# MAILMAN_PORT
+# 	The port, if you don't want to specify one in MAILMAN_URL.
+# MAILMAN_NO_AUTH
+# 	Skip authorization checks.
+#
+
+check_dep() {
+	if ! command -v "$1" > /dev/null 2>&1; then
+		echo "$1 needs to be installed and on PATH" >&2
+		return 1
+	fi
+}
+
+busybox_has_applet() {
+	if ! busybox --list | grep -Fxq "$1"; then
+		echo "Oops, it seems like your busybox wasn't compiled with $1" >&2
+		return 1
+	fi
+}
+
+_nc() {
+	if check_dep nc 2> /dev/null; then
+		nc "$@"
+	elif busybox_has_applet nc 2> /dev/null; then
+		busybox nc "$@"
+	else
+		check_dep nc; busybox_has_applet nc; exit 1;
+	fi
+}
+
+check_dep busybox || exit 1
+
+if [ "$*" ]; then
+	SMTP=1
+else
+	POP=1
+fi
+
+# ignore --
+if [ "$1" = '--' ]; then
+	shift 1
+fi
+
+# convenience variables for parameter expansions
+[ ! "$MAILMAN_NO_AUTH" ] && MAILMAN_AUTH=1
+[ "$MAILMAN_AUTH" ] && MAILMAN_NO_AUTH=
+case "$MAILMAN_SSL_LEVEL" in
+	0) NO_SSL=1 ;;
+	1) EXPLICIT_TLS=1; SSL=1 ;;
+	2) IMPLICIT_TLS=1; SSL=1 ;;
+	*) IMPLICIT_TLS=1; SSL=1 ;;
+esac
+
+if [ "$SSL" ]; then
+	check_dep openssl || exit 1
+fi
+
+if [ "$MAILMAN_AUTH" ]; then
+	if [ ! "$MAILMAN_USERNAME" ] || [ ! "$MAILMAN_URL" ]; then
+		echo '$MAILMAN_USERNAME and $MAILMAN_URL must be set' >&2
+		exit 1
+	fi
+
+	if [ ! "$MAILMAN_PASS_CMD" ] && [ ! "$MAILMAN_PASS" ]; then
+		echo '$MAILMAN_PASS_CMD or $MAILMAN_PASS must be set' >&2
+		exit 1
+	fi
+fi
+
+# fill in some gaps
+[ ! "$MAILMAN_MAIL_FROM" ] && MAILMAN_MAIL_FROM="$MAILMAN_USERNAME"
+[ "$MAILMAN_PASS_CMD" ] && MAILMAN_PASS=$($MAILMAN_PASS_CMD)
+[ "$MAILMAN_PORT" ] && MAILMAN_URL="${MAILMAN_URL}:${MAILMAN_PORT}"
+CREDS="$MAILMAN_USERNAME
+$MAILMAN_PASS"
+
+if [ "$SMTP" ]; then
+	export SMTPHOST="$MAILMAN_URL"
+	busybox_has_applet sendmail || exit 1
+	busybox sendmail \
+		-f "$MAILMAN_MAIL_FROM" \
+		-H "${SSL:+openssl s_client -quiet ${EXPLICIT_TLS:+-starttls smtp} -connect $MAILMAN_URL}" \
+		${MAILMAN_AUTH:+-amLOGIN} \
+		-- "$@" \
+		4<<-EOF
+			${MAILMAN_AUTH:+$CREDS}
+		EOF
+elif [ "$POP" ]; then
+	busybox_has_applet popmaildir || exit 1
+	busybox popmaildir "${MAILDIR:-"$HOME/Mail"}" -- \
+		${SSL:+openssl s_client -quiet ${EXPLICIT_TLS:+-starttls pop3} -connect} \
+		${NO_SSL:+_nc} \
+		"$MAILMAN_URL" \
+		<<-EOF
+			${MAILMAN_AUTH:+$CREDS}
+		EOF
+fi
+
