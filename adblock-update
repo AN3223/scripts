@@ -22,7 +22,7 @@ date +'# curled on %c' >> /etc/hosts.pending
 [ -r /etc/hosts.include ] && cat /etc/hosts.include >> /etc/hosts.pending
 
 # Fetch it
-curl -Ss https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
+curl -LSsf https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
 	>> /etc/hosts.pending
 
 # Test it
