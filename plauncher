@@ -1,0 +1,152 @@
+#!/bin/sh -e
+# plauncher - POSIX launcher script
+#
+# plauncher will take a command from the user and run the command. A
+# history of commands will be shown to the user to select from, or the
+# user may type in a command which will be ran and added to the history.
+#
+# Arguments provided to plauncher will be interpreted as a command to
+# run the user's selected command with (i.e. plauncher i3-msg exec,
+# plauncher swaymsg exec). The command provided as an argument will be
+# given the user's selected command as a single argument instead of
+# word-splitting the user's command.
+#
+# You must set the $TERMCMD environment variable, something like "xterm
+# -e", so applications may be launched in your terminal of choice.
+#
+# This script doesn't execute selected commands, they are instead printed to
+# stdout. Execute the stdout in whatever fashion you want.
+#
+
+getch() { dd bs=1 count=1 2> /dev/null ; }
+cleanterm() { stty sane; printf '\n'; }
+
+write_history() {
+	deduped=$(grep -Fxve "$1" < "$CONFDIR/recent" || :)
+	cat > "$CONFDIR/recent" <<-EOF
+		$deduped
+		$1
+	EOF
+}
+
+: "${TERMCMD:?'$TERMCMD must be set (i.e. xterm -e)'}"
+
+# you can use showkey -a to figure out the octal value for a key
+KEY_BACKSPACE=$(printf '\177')
+KEY_CTRL_U=$(printf '\025')
+KEY_CTRL_W=$(printf '\027')
+KEY_CTRL_P=$(printf '\020')
+KEY_CTRL_N=$(printf '\016')
+KEY_ESCAPE=$(printf '\033')
+KEY_TAB=$(printf '\t')
+
+# Ensure all of the config files exist
+CONFDIR="${XDG_CONFIG_HOME:-${HOME:?}/.config}/plauncher"
+mkdir -p "$CONFDIR"
+: >> "$CONFDIR/recent" >> "$CONFDIR/background" >> "$CONFDIR/terminal"
+
+stty -icanon -echo -nl
+cmd=
+cursor=
+list_length=
+while :; do
+	# only (re-)render the history if the history isn't being traversed
+	[ "$cursor" ] || list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
+
+	# redraw screen
+	tput clear >&2
+	printf '%s\n' "$list" >&2
+
+	# print prompt w/ current command
+	printf '\r> %s\033[K' "$cmd" >&2
+
+	c=$(getch)
+	[ "$c" ] || break
+	case "$c" in
+		"$KEY_ESCAPE")
+			cleanterm
+			exit 0
+			;;
+		"$KEY_CTRL_P"|"$KEY_TAB")
+			if [ "$cursor" ]; then
+				[ "$cursor" -gt 1 ] && cursor=$((cursor - 1))
+			else
+				list_length=$(wc -l) <<-EOF
+					$list
+				EOF
+				cursor="$list_length"
+			fi
+			cmd=$(sed -n "${cursor}p") <<-EOF
+				$list
+			EOF
+			;;
+		"$KEY_CTRL_N")
+			if [ "$cursor" ] && [ "$cursor" -lt "$list_length" ]; then
+				cursor=$((cursor + 1))
+				cmd=$(sed -n "${cursor}p") <<-EOF
+					$list
+				EOF
+			else # reached end of history
+				cmd=
+				cursor=
+				list_length=
+			fi
+			;;
+		"$KEY_CTRL_U") # clear line
+			cmd=
+			cursor=
+			list_length=
+			;;
+		"$KEY_CTRL_W") # delete last word from line
+			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
+				$cmd
+			EOF
+			;;
+		"$KEY_BACKSPACE")
+			cmd=${cmd%?}
+			;;
+		*)
+			cmd="${cmd}${c}"
+			cursor=
+			list_length=
+			;;
+	esac
+done
+cleanterm
+
+anonymous=
+case "$cmd" in
+	' '*) anonymous=1 ;;
+	'') exit 0 ;;
+	*) write_history "$cmd" ;;
+esac
+
+terminal=
+if grep -Fxqe "$cmd" < "$CONFDIR/terminal"; then
+	terminal=1
+elif grep -Fxqe "$cmd" < "$CONFDIR/background"; then
+	:
+else
+	printf '%s\n' "How should $cmd be ran?" \
+		'[1] terminal' \
+		'[2] background (default)' >&2
+	read -r answer
+	case "$answer" in
+		1)
+			[ "$anonymous" ] || printf '%s\n' "$cmd" >> "$CONFDIR/terminal"
+			terminal=1
+			;;
+		*)
+			[ "$anonymous" ] || printf '%s\n' "$cmd" >> "$CONFDIR/background"
+			;;
+	esac
+fi
+
+if [ "$*" ]; then
+	xargs -0 "$@" <<-EOF
+		${terminal:+$TERMCMD }$cmd
+	EOF
+else
+	eval exec "${terminal:+$TERMCMD }$cmd"
+fi
+

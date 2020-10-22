@@ -1,4 +1,0 @@
-#!/bin/sh
-# Just pass it to i3
-
-fzfrecent | xargs -0 i3-msg exec

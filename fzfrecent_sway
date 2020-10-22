@@ -1,4 +1,0 @@
-#!/bin/sh
-# Just passes the output to sway
-
-fzfrecent | xargs -0 swaymsg exec
