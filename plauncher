@@ -52,11 +52,11 @@ while :; do
 	[ "$cursor" ] || list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
 
 	# redraw screen
-	tput clear >&2
-	printf '%s\n' "$list" >&2
+	printf '\033[H%s' "$list" >&2
+	[ "$list" ] && printf '\n' >&2
 
 	# print prompt w/ current command
-	printf '\r> %s\033[K' "$cmd" >&2
+	printf '\r> %s\033[J' "$cmd" >&2
 
 	c=$(getch)
 	[ "$c" ] || break
