@@ -39,6 +39,7 @@ KEY_CTRL_P=$(printf '\020')
 KEY_CTRL_N=$(printf '\016')
 KEY_ESCAPE=$(printf '\033')
 KEY_TAB=$(printf '\t')
+EL=$(printf '\033[K')
 
 # Ensure all of the config files exist
 CONFDIR="${XDG_CONFIG_HOME:-${HOME:?}/.config}/plauncher"
@@ -51,8 +52,11 @@ while :; do
 	# only (re-)render the history if the history isn't being traversed
 	[ "$cursor" ] || list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
 
-	# redraw screen
-	printf '\033[H%s' "$list" >&2
+	# redraw screen, clearing any garbage left behind
+	list_w_el=$(sed "s/$/$EL/") <<-EOF
+		$list
+	EOF
+	printf '\033[H%s' "$list_w_el" >&2
 	[ "$list" ] && printf '\n' >&2
 
 	# print prompt w/ current command
