@@ -55,7 +55,7 @@ if [ -r /etc/hosts.exclude ]; then
 		fi
 
 		domain=$(printf '%s\n' "$line" | cut -d ' ' -f 2)
-		if ! grep -Fxq "$domain" /etc/hosts.exclude; then
+		if ! grep -Fxqe "$domain" /etc/hosts.exclude; then
 			printf '%s\n' "$line" >> "$tmp"
 		fi
 	done < /etc/hosts.pending

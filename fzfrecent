@@ -31,9 +31,9 @@ sel="$(fzf $opts --history="$config_dir/recent" < "$config_dir/recent")"
 
 # If the command has been ran before, run it with the same config,
 # otherwise prompt the user for how the command should be run.
-if grep -Fxq "$sel" "$config_dir/background"; then
+if grep -Fxqe "$sel" "$config_dir/background"; then
 	printf '%s\n' "$sel"
-elif grep -Fxq "$sel" "$config_dir/terminal"; then
+elif grep -Fxqe "$sel" "$config_dir/terminal"; then
 	printf '%s\n' "$TERMCMD $sel"
 else
 	header="Run $sel in the background or in the terminal?"
