@@ -60,10 +60,10 @@ if [ "$*" ]; then
 			printf '%s\n' "$*" >> "$NOTIFY_FILE";
 			;;
 		-d)
-			tmp=$(mktemp)
-			sed '$d' "$NOTIFY_FILE" > "$tmp"
-			cat "$tmp" > "$NOTIFY_FILE"
-			rm "$tmp"
+			new=$(sed '$d' "$NOTIFY_FILE")
+			cat > "$NOTIFY_FILE" <<-EOF
+				$new
+			EOF
 			;;
 		-r)
 			rm "$NOTIFY_FILE"
