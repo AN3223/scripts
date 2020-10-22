@@ -46,9 +46,7 @@ mkdir -p "$CONFDIR"
 : >> "$CONFDIR/recent" >> "$CONFDIR/background" >> "$CONFDIR/terminal"
 
 stty -icanon -echo -nl
-cmd=
-cursor=
-list_length=
+unset -v cmd cursor list_length
 while :; do
 	# only (re-)render the history if the history isn't being traversed
 	[ "$cursor" ] || list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
@@ -87,15 +85,11 @@ while :; do
 					$list
 				EOF
 			else # reached end of history
-				cmd=
-				cursor=
-				list_length=
+				unset -v cmd cursor list_length
 			fi
 			;;
 		"$KEY_CTRL_U") # clear line
-			cmd=
-			cursor=
-			list_length=
+			unset -v cmd cursor list_length
 			;;
 		"$KEY_CTRL_W") # delete last word from line
 			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
@@ -107,21 +101,20 @@ while :; do
 			;;
 		*)
 			cmd="${cmd}${c}"
-			cursor=
-			list_length=
+			unset -v cursor list_length
 			;;
 	esac
 done
 cleanterm
 
-anonymous=
+unset -v anonymous
 case "$cmd" in
 	' '*) anonymous=1 ;;
 	'') exit 0 ;;
 	*) write_history "$cmd" ;;
 esac
 
-terminal=
+unset -v terminal
 if grep -Fxqe "$cmd" < "$CONFDIR/terminal"; then
 	terminal=1
 elif grep -Fxqe "$cmd" < "$CONFDIR/background"; then

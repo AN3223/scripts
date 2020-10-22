@@ -8,7 +8,7 @@
 # Beware that adding videos to the playlist takes time, so a high (or
 # 0) -n value might cause the first video to take a while to load.
 
-n=
+unset -v n
 while getopts 'n:' o; do
 	case "$o" in
 		n)

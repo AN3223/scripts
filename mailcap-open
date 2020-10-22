@@ -103,10 +103,9 @@ fi
 MIMER=${MIMER:-xdg-mime query filetype}
 MIMETYPE=$($MIMER "$FILENAME")
 
+unset -v HASTERMINAL
 if [ -t 0 ] && [ -t 1 ]; then
 	HASTERMINAL=1
-else
-	HASTERMINAL=
 fi
 
 if [ ! "$HASTERMINAL" ] && [ ! "$TERMCMD" ]; then
@@ -145,8 +144,7 @@ strip_whitespace() {
 select_command() {(
 	IFS=';'
 	while read -r FILE_MIMETYPE cmd opts; do
-		copiousoutput=
-		needsterminal=
+		unset -v copiousoutput needsterminal
 
 		# Skip comments
 		[ "${FILE_MIMETYPE##\#*}" ] || continue
@@ -197,7 +195,7 @@ select_command() {(
 		done
 
 		if [ "$next" ]; then
-			next=
+			unset -v next
 			continue
 		fi
 
