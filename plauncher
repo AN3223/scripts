@@ -11,6 +11,11 @@
 # given the user's selected command as a single argument instead of
 # word-splitting the user's command.
 #
+# plauncher's user interface is basic, use Tab or ^P to traverse
+# backward through the command history, use ^N to traverse forward
+# through the command history, and everything else will be interpreted
+# as a query to search through the command history.
+#
 # You must set the $TERMCMD environment variable, something like "xterm
 # -e", so applications may be launched in your terminal of choice.
 #
