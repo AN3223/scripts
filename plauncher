@@ -19,9 +19,6 @@
 # You must set the $TERMCMD environment variable, something like "xterm
 # -e", so applications may be launched in your terminal of choice.
 #
-# This script doesn't execute selected commands, they are instead printed to
-# stdout. Execute the stdout in whatever fashion you want.
-#
 
 getch() { dd bs=1 count=1 2> /dev/null ; }
 cleanterm() { stty sane; printf '\n'; }
@@ -56,13 +53,19 @@ mkdir -p "$CONFDIR"
 stty -icanon -echo -nl
 unset -v cmd cursor list_length
 while :; do
-	# only (re-)render the history if the history isn't being traversed
-	[ "$cursor" ] || list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
+	if [ "$cursor" ]; then
+		cmd=$(sed -n "${cursor}p") <<-EOF
+			$list
+		EOF
+	else
+		# only render the history if the history isn't being traversed
+		list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
+		# place EL characters at the end of each line to clear garbage
+		list_w_el=$(sed "s/$/$EL/") <<-EOF
+			$list
+		EOF
+	fi
 
-	# redraw screen, clearing any garbage left behind
-	list_w_el=$(sed "s/$/$EL/") <<-EOF
-		$list
-	EOF
 	# crazy parameter expansion just prevents stray newlines
 	printf '\033[H%s' "${list:+${list_w_el}${NL}}" >&2
 
@@ -85,16 +88,10 @@ while :; do
 				EOF
 				cursor="$list_length"
 			fi
-			cmd=$(sed -n "${cursor}p") <<-EOF
-				$list
-			EOF
 			;;
 		"$KEY_CTRL_N")
 			if [ "$cursor" ] && [ "$cursor" -lt "$list_length" ]; then
 				cursor=$((cursor + 1))
-				cmd=$(sed -n "${cursor}p") <<-EOF
-					$list
-				EOF
 			else # reached end of history
 				unset -v cmd cursor list_length
 			fi
