@@ -45,6 +45,8 @@ KEY_CTRL_N=$(printf '\016')
 KEY_ESCAPE=$(printf '\033')
 KEY_TAB=$(printf '\t')
 EL=$(printf '\033[K')
+NL="
+"
 
 # Ensure all of the config files exist
 CONFDIR="${XDG_CONFIG_HOME:-${HOME:?}/.config}/plauncher"
@@ -61,8 +63,8 @@ while :; do
 	list_w_el=$(sed "s/$/$EL/") <<-EOF
 		$list
 	EOF
-	printf '\033[H%s' "$list_w_el" >&2
-	[ "$list" ] && printf '\n' >&2
+	# crazy parameter expansion just prevents stray newlines
+	printf '\033[H%s' "${list:+${list_w_el}${NL}}" >&2
 
 	# print prompt w/ current command
 	printf '\r> %s\033[J' "$cmd" >&2
