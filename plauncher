@@ -151,9 +151,7 @@ case "$cmd" in
 esac
 
 if [ "$*" ]; then
-	xargs -0 "$@" <<-EOF
-		${terminal:+$TERMCMD }$cmd
-	EOF
+	exec "$@" "${terminal:+$TERMCMD }$cmd"
 else
 	eval exec "${terminal:+$TERMCMD }$cmd"
 fi
