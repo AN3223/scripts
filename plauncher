@@ -109,8 +109,15 @@ while :; do
 			cmd=${cmd%?}
 			;;
 		*)
-			cmd="${cmd}${c}"
-			unset -v cursor list_length
+			# only append characters to the command if they aren't
+			# whacky characters
+			cval=$(od -A n -N 1 -t u1) <<-EOF
+				$c
+			EOF
+			if [ "$cval" -ge 32 ]; then
+				cmd="${cmd}${c}"
+				unset -v cursor list_length
+			fi
 			;;
 	esac
 done
