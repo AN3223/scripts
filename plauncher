@@ -123,13 +123,6 @@ while :; do
 done
 cleanterm
 
-unset -v anonymous
-case "$cmd" in
-	' '*) anonymous=1 ;;
-	'') exit 0 ;;
-	*) write_history "$cmd" ;;
-esac
-
 unset -v terminal
 if grep -Fxqe "$cmd" < "$CONFDIR/terminal"; then
 	terminal=1
@@ -150,6 +143,13 @@ else
 			;;
 	esac
 fi
+
+unset -v anonymous
+case "$cmd" in
+	' '*) anonymous=1 ;;
+	'') exit 0 ;;
+	*) write_history "$cmd" ;;
+esac
 
 if [ "$*" ]; then
 	xargs -0 "$@" <<-EOF
