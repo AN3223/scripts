@@ -51,12 +51,14 @@ mkdir -p "$CONFDIR"
 : >> "$CONFDIR/recent" >> "$CONFDIR/background" >> "$CONFDIR/terminal"
 
 stty -icanon -echo -nl
-unset -v cmd cursor list_length
+unset -v cmd cursor list_length appended
 while :; do
 	if [ "$cursor" ]; then
 		cmd=$(sed -n "${cursor}p") <<-EOF
 			$list
 		EOF
+	elif [ ! "$list" ] && [ "$appended" ]; then
+		: # don't rerender if we know there won't be anything to render
 	else
 		# only render the history if the history isn't being traversed
 		list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
@@ -93,16 +95,17 @@ while :; do
 			if [ "$cursor" ] && [ "$cursor" -lt "$list_length" ]; then
 				cursor=$((cursor + 1))
 			else # reached end of history
-				unset -v cmd cursor list_length
+				unset -v cmd cursor list_length appended
 			fi
 			;;
 		"$KEY_CTRL_U") # clear line
-			unset -v cmd cursor list_length
+			unset -v cmd cursor list_length appended
 			;;
 		"$KEY_CTRL_W") # delete last word from line
 			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
 				$cmd
 			EOF
+			unset -v appended
 			;;
 		"$KEY_BACKSPACE")
 			cmd=${cmd%?}
@@ -115,6 +118,7 @@ while :; do
 			EOF
 			if [ "$cval" -ge 32 ]; then
 				cmd="${cmd}${c}"
+				appended=1
 				unset -v cursor list_length
 			fi
 			;;
