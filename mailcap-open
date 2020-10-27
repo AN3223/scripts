@@ -203,6 +203,7 @@ select_command() {(
 
 		# The rest of this loop generates shell code in stdout
 
+		# FIXME setsid isn't POSIX
 		[ ! "$needsterminal" ] && printf %s ' ( setsid '
 
 		if [ "$needsterminal" ] && [ ! "$HASTERMINAL" ]; then
