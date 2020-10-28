@@ -105,10 +105,11 @@ while :; do
 			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
 				$cmd
 			EOF
-			unset -v appended
+			unset -v cursor list_length appended
 			;;
 		"$KEY_BACKSPACE")
 			cmd=${cmd%?}
+			unset -v cursor list_length appended
 			;;
 		*)
 			# only append characters to the command if they aren't
