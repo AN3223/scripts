@@ -1,1 +1,5 @@
-This is my collection of scripts that I've made for various purposes. Issues/PRs welcome.
+You can clone this repository as a hidden service if you so desire:
+torsocks git clone --depth 1 git://r7imjx7zhchprlklefxtunh2yfxt545yed64gwvuqlln4kmeswct3vad.onion/scripts
+
+This is my collection of scripts that I've made for various purposes.
+Issues/PRs welcome.
