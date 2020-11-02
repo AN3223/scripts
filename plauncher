@@ -83,7 +83,9 @@ while :; do
 			;;
 		"$KEY_CTRL_P"|"$KEY_TAB")
 			if [ "$cursor" ]; then
-				[ "$cursor" -gt 1 ] && cursor=$((cursor - 1))
+				if [ "$cursor" -gt 1 ]; then
+					cursor=$((cursor - 1))
+				fi
 			else
 				list_length=$(wc -l) <<-EOF
 					$list

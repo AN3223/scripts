@@ -96,5 +96,8 @@ for pkg in $XDISTUPGRADE_PKGS; do
 done
 
 # If rebuilt, install new package
-[ "$rebuilt_pkgs" ] && xi -f $rebuilt_pkgs
+if [ "$rebuilt_pkgs" ]; then
+	xi -f $rebuilt_pkgs
+fi
+
 

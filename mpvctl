@@ -6,11 +6,12 @@
 # Requires socat
 #
 
-err()      { printf 'mpvctl: %s\n' "$1" >&2; exit 1;   }
+err() { printf 'mpvctl: %s\n' "$1" >&2; exit 1; }
+
 mpv_send() {
 	for socket in /tmp/mpvctl*; do
 		# skip non-sockets and failed globs
-		[ ! -S "$socket" ] && continue
+		[ -S "$socket" ] || continue
 
 		printf '%s\n' "$1" | socat - "$socket"
 	done

@@ -19,7 +19,9 @@ rm -f /etc/hosts.pending
 date +'# curled on %c' >> /etc/hosts.pending
 
 # Include /etc/hosts.include
-[ -r /etc/hosts.include ] && cat /etc/hosts.include >> /etc/hosts.pending
+if [ -r /etc/hosts.include ]; then
+	cat /etc/hosts.include >> /etc/hosts.pending
+fi
 
 # Fetch it
 curl -LSsf https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \

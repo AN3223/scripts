@@ -14,7 +14,7 @@
 
 err() { printf '%s\n' "$0: $1" >&2; exit 1; }
 
-[ ! "$TERMCMD" ] && err '$TERMCMD must be set, i.e. TERMCMD="xterm -e"'
+[ "$TERMCMD" ] || err '$TERMCMD must be set, i.e. TERMCMD="xterm -e"'
 
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fzfrecent"
 mkdir -p "$config_dir"
@@ -27,7 +27,7 @@ opts='--bind=enter:print-query,tab:replace-query+top'
 sel="$(fzf $opts --history="$config_dir/recent" < "$config_dir/recent")"
 
 # Ensure the selection exists
-[ ! "$sel" ] && err 'Nothing was selected!'
+[ "$sel" ] || err 'Nothing was selected!'
 
 # If the command has been ran before, run it with the same config,
 # otherwise prompt the user for how the command should be run.

@@ -31,7 +31,7 @@ NOTIFY_FILE=$HOME/.snotify
 # read stdin before grabbing lock, since reading stdin may take a while
 if [ "$1" = '-' ]; then
 	STDIN=$(cat -)
-	[ ! "$STDIN" ] && exit 1
+	[ "$STDIN" ] || exit 1
 fi
 
 # try to use a good lock implementation, fall back to something dirtier
