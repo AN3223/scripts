@@ -18,7 +18,7 @@ while :; do
 	back=${words##*=}
 	echo "$front"
 	printf '> '
-	read response
+	read -r response
 	if [ "$response" = "$back" ]; then
 		printf '\n----------------\nCorrect!\n----------------\n\n'
 	else
