@@ -1,40 +1,37 @@
-#!/usr/bin/env python3
-"""
-This script takes a URL argument to a YouTube channel/playlist and returns a
-link to the corresponding RSS feed.
-"""
+#!/usr/bin/env perl
 
-from urllib.parse import urlparse
-from sys import argv
+use strict;
+use warnings;
+use URI;
 
+#
 # URLs:
 # https://youtube.com/user/tuxreviews/videos
+# https://youtube.com/c/tuxreviews/videos
 # https://youtube.com/channel/UC5UAwBUum7CPN5buc-_N1Fw
 # https://youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG
-
-# RSS counterparts:
-# https://youtube.com/feeds/videos.xml?channel_id=UC5UAwBUum7CPN5buc-_N1Fw
+#
+# Feed counterparts:
 # https://youtube.com/feeds/videos.xml?user=tuxreviews
+# https://youtube.com/feeds/videos.xml?user=tuxreviews
+# https://youtube.com/feeds/videos.xml?channel_id=UC5UAwBUum7CPN5buc-_N1Fw
 # https://youtube.com/feeds/videos.xml?playlist_id=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG
+#
 
-URL = argv[1]
-PARSED = urlparse(URL)
-PATH = [x for x in PARSED.path.split('/') if x]
+foreach my $rawurl (@ARGV) {
+	my $url = URI->new($rawurl);
+	my @path = $url->path_segments();
 
-if PATH[0] == 'user':
-    ID = PATH[1]
-    RSS = f"https://youtube.com/feeds/videos.xml?user={ID}"
-elif PATH[0] == 'c':
-    ID = PATH[1]
-    RSS = f"https://youtube.com/feeds/videos.xml?user={ID}"
-elif PATH[0] == 'channel':
-    ID = PATH[1]
-    RSS = f"https://youtube.com/feeds/videos.xml?channel_id={ID}"
-elif PATH[0] == 'playlist':
-    ID = PARSED.query.lstrip('list=')
-    RSS = f"https://youtube.com/feeds/videos.xml?playlist_id={ID}"
-else:
-    raise ValueError('Invalid URL')
-
-print(RSS)
+	if (($path[1] eq 'user') or ($path[1] eq 'c')) {
+		print "https://youtube.com/feeds/videos.xml?user=$path[2]\n";
+	} elsif ($path[1] eq 'channel') {
+		print "https://youtube.com/feeds/videos.xml?channel_id=$path[2]\n";
+	} elsif ($path[1] eq 'playlist') {
+		my %params = $url->query_form;
+		print "https://youtube.com/feeds/videos.xml?playlist_id=$params{list}\n";
+	} else {
+		print STDERR "Invalid URL: $rawurl\n";
+		exit 1;
+	}
+}
 
