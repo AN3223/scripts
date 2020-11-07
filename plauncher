@@ -129,6 +129,12 @@ while :; do
 done
 cleanterm
 
+case "$cmd" in
+	' '*) anonymous=1 ;;
+	'') exit 0 ;;
+	*) unset -v anonymous ;;
+esac
+
 unset -v terminal
 if grep -Fxqe "$cmd" < "$CONFDIR/terminal"; then
 	terminal=1
@@ -150,12 +156,7 @@ else
 	esac
 fi
 
-unset -v anonymous
-case "$cmd" in
-	' '*) anonymous=1 ;;
-	'') exit 0 ;;
-	*) write_history "$cmd" ;;
-esac
+[ "$anonymous" ] || write_history "$cmd"
 
 if [ "$*" ]; then
 	exec "$@" "${terminal:+$TERMCMD }$cmd"
