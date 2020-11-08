@@ -1,4 +1,5 @@
 #!/bin/sh -ef
+# shellcheck disable=SC2209,SC2086
 
 help() {
 	cat - >&2 <<EOF
@@ -62,8 +63,48 @@ MCO_HANDLER
 
 	Ideally a custom handler should always throw an error in the case of
 	a URL.
+
+PLEASE_USE_NOHUP
+	mailcap_open will usually use setsid to detach a process, but you can
+	set this variable to use nohup instead.
+
+	This will only have an effect when the prerequisites for detaching a
+	process have already been met. If setsid isn't available on your
+	system then mailcap_open will automatically fallback to nohup without
+	the need for this environment variable.
 EOF
 }
+
+# gsub var target replacement [target replacement...]
+gsub() {
+	var="$1"; eval _var='$'"$var"; shift 1;
+	while :; do
+		case "$_var" in
+			*"$1"*)
+				_var="${_var%%"$1"*}${2}${_var#*"$1"}"
+				;;
+			*)
+				shift 2
+				if [ "$#" -eq 0 ]; then
+					break
+				fi
+				;;
+		esac
+	done
+	eval "$var"='$_var'; unset -v var _var;
+}
+
+# Strips surrounding whitespace from a variable
+strip_whitespace() {
+	var="$1"; eval _var='$'"$var";
+	IFS=' ' read -r "$1" <<-EOF
+		$_var
+	EOF
+	unset -v var _var
+}
+
+set_trap() { trap 'rm -f "$tmp"' EXIT TERM QUIT HUP INT ABRT; }
+unset_trap() { trap - EXIT TERM QUIT HUP INT ABRT; }
 
 case "$1" in
 	--help|-h) help; exit 0;;
@@ -71,9 +112,7 @@ case "$1" in
 esac
 
 FILENAME=${1:-'-'}
-MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl -LSsf --}
-
-# FIXME tmp won't be deleted after a crash
+unset -v tmp; set_trap;
 if [ "$FILENAME" = '-' ]; then
 	tmp=$(mktemp)
 	cat - > "$tmp"
@@ -81,10 +120,10 @@ if [ "$FILENAME" = '-' ]; then
 elif [ "$MCO_HANDLER" ]; then
 	$MCO_HANDLER "$FILENAME" || exit 0
 else
-	tmp=$(mktemp)
 	case "$FILENAME" in
 		*://*)
-			$MCO_DOWNLOADER "$FILENAME" > "$tmp"
+			tmp=$(mktemp)
+			${MCO_DOWNLOADER:-curl -LSsf --} "$FILENAME" > "$tmp"
 			FILENAME=$tmp
 			;;
 		*)
@@ -92,165 +131,129 @@ else
 	esac
 fi
 
-if [ ! "$MAILCAPS" ]; then
-	MAILCAPS="$HOME/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap"
+: "${MAILCAPS:=${HOME:?}/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap}"
+
+MAILCAP=$(IFS=:; cat $MAILCAPS 2> /dev/null || :)
+: "${MAILCAP:?No mailcap files (or all mailcap files are empty)}"
+
+MIMETYPE=$(${MIMER:=xdg-mime query filetype} "$FILENAME")
+
+if [ -t 0 ] && [ -t 1 ] && [ -t 2 ]; then
+	TTY=$(tty) || unset -v TTY
+else
+	unset -v TTY
 fi
 
-MAILCAP=$(mktemp)
-(
-	IFS=:
-	for f in $MAILCAPS; do
-		cat "$f" >> "$MAILCAP" 2> /dev/null || :
-	done
-)
-if [ ! -s "$MAILCAP" ]; then
-	echo 'No mailcap files (or mailcap files are empty)' >&2
-	exit 1
+if [ ! "$TTY" ]; then
+	: "${TERMCMD:?'TERMCMD must be set (e.g. xterm -e)'}"
 fi
 
-MIMER=${MIMER:-xdg-mime query filetype}
-MIMETYPE=$($MIMER "$FILENAME")
+IFS=';'
+exec <<-EOF
+	$MAILCAP
+EOF
+while read -r FILE_MIMETYPE cmd opts; do
+	unset -v copiousoutput needsterminal skip
 
-unset -v HASTERMINAL
-if [ -t 0 ] && [ -t 1 ]; then
-	HASTERMINAL=1
-fi
-
-if [ ! "$HASTERMINAL" ] && [ ! "$TERMCMD" ]; then
-	echo 'The TERMCMD environment variable must be set to spawn a terminal
-emulator (i.e. xterm -e)' >&2
-	exit 1
-fi
-
-# Recursively replaces %s and %t
-percent_substitute() {
-	case "$1" in
-		*%t*)
-			percent_substitute "${1%%%t*}${FILE_MIMETYPE}${1##*%t}"
-			;;
-		*%s*)
-			percent_substitute "${1%%%s*}"'${FILENAME}'"${1##*%s}"
-			;;
-		*)
-			printf %s "$1"
-			return
-			;;
+	# Skip comments and empty lines
+	case "$FILE_MIMETYPE" in
+		''|\#*) continue ;;
+		*) ;;
 	esac
-}
 
-# Strips surrounding whitespace from a string
-strip_whitespace() {
-	string=${1:-$(cat -)}
-	string=${string## }
-	string=${string%% }
-	printf '%s\n' "$string"
-}
+	strip_whitespace FILE_MIMETYPE
 
-# Prints the command to run based on the file's mimetype and the
-# mimetypes defined in the user's mailcap file. Function is kept in a
-# subshell to prevent IFS from leaking out.
-select_command() {(
-	IFS=';'
-	while read -r FILE_MIMETYPE cmd opts; do
-		unset -v copiousoutput needsterminal
+	# Skip non-matching mimetypes
+	# shellcheck disable=SC2254 # (allow globs)
+	case "$MIMETYPE" in
+		"$FILE_MIMETYPE"|$FILE_MIMETYPE) ;;
+		*) continue ;;
+	esac
 
-		# Skip comments
-		[ "${FILE_MIMETYPE##\#*}" ] || continue
+	for opt in $opts; do
+		strip_whitespace opt
+		case "$opt" in
+			needsterminal) needsterminal=1 ;;
+			copiousoutput) copiousoutput=1 ;;
+			test=*)
+				if ! eval "${opt#test=}" > /dev/null 2>&1; then
+					skip=1; break;
+				fi
+				;;
+			notes=*) ;;
+			description=*) ;;
+			nametemplate=*) ;;
+			x11-bitmap=*) ;;
+			compose=*) ;;
+			composetyped=*) ;;
+			print=*) ;;
+			textualnewlines=*) ;;
+			x-*) ;;
+			*)
+				echo "Warning, unrecognized option: $opt" >&2
+				;;
+		esac
+	done
 
-		# Skip empty lines
-		[ "$FILE_MIMETYPE" ] || continue
+	if [ "$skip" ]; then
+		continue
+	fi
 
-		FILE_MIMETYPE=$(strip_whitespace "$FILE_MIMETYPE")
+	if [ "$MCO_NEEDSTERMINAL" ]; then
+		needsterminal=1
+	fi
 
-		# Skip non-matching mimetypes
-		if [ "$FILE_MIMETYPE" = "$MIMETYPE" ]; then
-			:
-		elif [ "$(dirname "$FILE_MIMETYPE")" = "$(dirname "$MIMETYPE")" ] \
-			&& [ "$(basename "$FILE_MIMETYPE")" = '*' ]; then
-				:
-		else
-			continue
-		fi
+	if [ "$needsterminal" ] && [ ! "$TTY" ]; then
+		spawn_terminal=1
+		detach=1
+	elif [ ! "$needsterminal" ]; then
+		unset -v spawn_terminal
+		detach=1
+	else
+		unset -v spawn_terminal detach
+	fi
 
-		for opt in $opts; do
-			opt=$(strip_whitespace "$opt")
-			case "$opt" in
-				needsterminal)
-					needsterminal=1
-					;;
-				copiousoutput)
-					copiousoutput=1
-					;;
-				test=*)
-					if ! eval "${opt#test=}" > /dev/null 2>&1; then
-						next=1
-						break
-					fi
-					;;
-				notes=*) ;;
-				description=*) ;;
-				nametemplate=*) ;;
-				x11-bitmap=*) ;;
-				compose=*) ;;
-				composetyped=*) ;;
-				print=*) ;;
-				textualnewlines=*) ;;
-				x-*) ;;
-				*)
-					echo "Warning, unrecognized option: $opt" >&2
-					;;
-			esac
-		done
+	# fallback to nohup, since setsid isn't POSIX
+	if [ ! "$PLEASE_USE_NOHUP" ] && command -v setsid > /dev/null 2>&1; then
+		detacher=setsid
+	else
+		detacher=nohup
+	fi
 
-		if [ "$next" ]; then
-			unset -v next
-			continue
-		fi
-
-		if [ "$MCO_NEEDSTERMINAL" ]; then
-			needsterminal=1
-		fi
-
-		# The rest of this loop generates shell code in stdout
-
-		# FIXME setsid isn't POSIX
-		[ "$needsterminal" ] || printf %s ' ( setsid '
-
-		if [ "$needsterminal" ] && [ ! "$HASTERMINAL" ]; then
-			printf %s " $TERMCMD "
-		fi
-
-		percent_substitute "$cmd"
-
-		# Prevent unneeded output
+	# usually wouldn't do this as a function but this needs to be able
+	# to run in the background and foreground
+	open() {
 		if [ ! "$needsterminal" ] && [ ! "$copiousoutput" ]; then
-			printf %s ' > /dev/null 2>&1 '
+			exec > /dev/null 2>&1
+		elif [ "$needsterminal" ] && [ "$TTY" ]; then
+			exec < "$TTY"
 		fi
 
-		# Put file contents into stdin if %s is unused
-		case "$cmd" in *%s*);; *)
-			printf %s ' < "$FILENAME" ';;
+		# Put file contents into stdin if %s is missing
+		case "$cmd" in *%s*) ;; *)
+			exec < "$FILENAME" ;;
 		esac
 
-		# Implement copiousoutput
-		if [ "$copiousoutput" ]; then
-			printf %s " | ${PAGER:-less} "
-		fi
+		gsub cmd %s '$FILENAME' %t "$FILE_MIMETYPE"
 
-		printf %s ' ; rm -f "$tmp" '
+		IFS=' '
+		eval "${detach:+${detacher}}" \
+			"${spawn_terminal:+$TERMCMD}" \
+			"$cmd" \
+			"${copiousoutput:+| ${PAGER:-less}}" \
+			|| :
+	}
 
-		[ "$needsterminal" ] || printf %s ' ) & '
+	if [ "$detach" ]; then
+		# only the child process should have the trap
+		unset_trap
+		(set_trap; open) &
+	else
+		open
+	fi
 
-		break
-	done < "$MAILCAP"
-)}
+	exit 0
+done
 
-cmd=$(select_command)
-if [ "$cmd" ]; then
-	eval "$cmd"
-else
-	rm -f "$tmp"
-	exit 1
-fi
+exit 1
 
-rm -f "$MAILCAP"
