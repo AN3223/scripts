@@ -1,24 +1,34 @@
 #!/bin/sh -e
-# plauncher - POSIX launcher script
-#
-# plauncher will take a command from the user and run the command. A
-# history of commands will be shown to the user to select from, or the
-# user may type in a command which will be ran and added to the history.
-#
-# Arguments provided to plauncher will be interpreted as a command to
-# run the user's selected command with (i.e. plauncher i3-msg exec,
-# plauncher swaymsg exec). The command provided as an argument will be
-# given the user's selected command as a single argument instead of
-# word-splitting the user's command.
-#
-# plauncher's user interface is basic, use Tab or ^P to traverse
-# backward through the command history, use ^N to traverse forward
-# through the command history, and everything else will be interpreted
-# as a query to search through the command history.
-#
-# You must set the $TERMCMD environment variable, something like "xterm
-# -e", so applications may be launched in your terminal of choice.
-#
+
+help() {
+	cat - >&2 <<EOF
+plauncher - POSIX launcher script
+
+plauncher [supervisor_command [args...]]
+
+plauncher will query a command from the user and run the command. A
+history of commands will be shown to the user to select from, or the
+user may type in a new command which will be ran and added to the
+history.
+
+Arguments provided to plauncher will be interpreted as a "supervisor
+command" to run the user's selected command with (i.e. plauncher i3-msg
+exec, plauncher swaymsg exec). The supervisor command as an argument will
+be given the user's selected command as a single argument instead of
+word-splitting the user's command.
+
+plauncher's user interface is basic, use Tab or ^P to traverse backward
+through the command history, use ^N to traverse forward through the
+command history, and most everything else will be interpreted as a query
+to search through the command history. ^W is also available for deleting
+words and BACKSPACE for deleting characters. Other line editing is not
+implemented, since the idea is to type short commands and then never
+type them again.
+
+You must set the \$TERMCMD environment variable, something like "xterm
+-e", so applications may be launched in your terminal of choice.
+EOF
+}
 
 getch() { dd bs=1 count=1 2> /dev/null ; }
 cleanterm() { stty sane; printf '\n'; }
@@ -30,6 +40,11 @@ write_history() {
 		$1
 	EOF
 }
+
+case "$1" in
+	--help|-h) help; exit 0;;
+	*) ;;
+esac
 
 : "${TERMCMD:?'$TERMCMD must be set (i.e. xterm -e)'}"
 

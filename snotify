@@ -1,30 +1,40 @@
 #!/bin/sh -e
-# Simple script for sending/receiving/maintaining notifications, for use
-# with status bars et al.
-#
-# The default behavior when supplied no arguments is to display the most
-# recent notification.
-#
-# The notification file is stored at ~/.notify and each line represents
-# a notification. Don't directly modify the file yourself, use this
-# script instead to prevent data races.
-#
-# The following flags are recognized:
-#
-# -n msg...
-#   Add notification msg. Multiple arguments to this flag will be
-#   concatenated by the first character of the IFS (whitespace by
-#   default).
-#
-# -d
-#   Delete the most recent notification
-#
-# -r
-#   Delete all notifications
-#
-# -
-#   Concatenate stdin onto the end of the notification file
-#
+
+help() {
+	cat - >&2 <<EOF
+snotify - a simple notification system
+
+snotify [-ndr]
+
+snotify is a simple notification system designed for use with status
+bars et al. and based around keeping notifications in a single file
+located at ~/.snotify (snotify manages this file, don't modify it
+manually).
+
+The default behavior when supplied no arguments is to display the most
+recent notification.
+
+The following options are recognized:
+
+-n msg...
+	Add notification msg. Multiple arguments to this option will be
+	joined by the first character of the IFS (usually whitespace).
+
+-d
+	Delete the most recent notification
+
+-r
+	Delete all notifications
+
+-
+	Concatenate stdin onto the end of the notification file
+EOF
+}
+
+case "$1" in
+	--help|-h) help; exit 0;;
+	*) ;;
+esac
 
 NOTIFY_FILE=$HOME/.snotify
 
@@ -78,7 +88,7 @@ if [ "$*" ]; then
 			done
 			;;
 		*)
-			echo 'Invalid argument' >&2
+			help
 			exit 1
 			;;
 	esac

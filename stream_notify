@@ -1,0 +1,38 @@
+#!/bin/sh -e
+
+help() {
+	cat - >&2 <<EOF
+stream_notify - show streams that are currently live
+
+stream_notify
+
+This script requires a line-separated list of stream URLs at ~/.streams
+(or another file specified by the NOTIFYSTREAMS environment variable)
+and youtube-dl.
+
+Examples using cron:
+	# 0,30 * * * * means to run every 30 minutes
+
+	# Using my snotify script
+	0,30 * * * * stream_notify | snotify -
+
+	# Using a simple file
+	0,30 * * * * stream_notify > ~/.livestreams
+
+	# Using nothing, expecting cron to send you mail
+	0,30 * * * * stream_notify
+EOF
+}
+
+if [ "$*" ]; then
+	help
+	exit 1
+fi
+
+exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"
+while read -r stream; do
+	if youtube-dl -qs "$stream" 2> /dev/null; then
+		printf '%s\n' "$stream is live"
+	fi
+done
+

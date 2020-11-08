@@ -1,25 +1,32 @@
 #!/bin/sh
-# Plays brown noise that fades in at the start, then continues with a
-# couple of slow, shallow, tremolo filters that are slightly offset from
-# each other to give the appearance of random subtle "waves"
-#
-# Usage:
-# relax [backend]
-#
-# If a backend isn't specified then one will be automatically selected
-# in the same order as below:
-# --ffplay (requires ffmpeg compiled with SDL)
-# --mpv (requires mpv)
-# --ffmpeg (requires ffmpeg, only plays into alsa)
-# --sox (requires sox)
+
+help() {
+	cat - >&2 <<EOF
+relax - plays some relaxing noise
+
+relax [--ffplay|--mpv|--ffmpeg|--sox]
+
+Plays brown noise that fades in at the start, then continues with a
+couple of slow, shallow, tremolo filters that are slightly offset from
+each other to give the appearance of random/subtle "waves"
+
+If a backend isn't specified then one will be automatically selected
+in the same order as below:
+	--ffplay (requires ffmpeg compiled with SDL)
+	--mpv (requires mpv)
+	--ffmpeg (requires ffmpeg, only plays into alsa)
+	--sox (requires sox)
+EOF
+}
 
 lavfifilter="anoisesrc=color=brown,afade=type=in:duration=45,tremolo=f=0.1:d=0.1,tremolo=f=0.16:d=0.2"
 
 case "$1" in
-	--ffplay) backend=ffplay ;;
-	--mpv)    backend=mpv ;;
-	--sox)    backend=sox ;;
-	--ffmpeg) backend=ffmpeg ;;
+	--ffplay)  backend=ffplay ;;
+	--mpv)     backend=mpv ;;
+	--sox)     backend=sox ;;
+	--ffmpeg)  backend=ffmpeg ;;
+	--help|-h) help; exit 0;;
 	*)
 		if command -v ffplay > /dev/null 2>&1; then
 			backend=ffplay

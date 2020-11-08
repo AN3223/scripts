@@ -1,10 +1,24 @@
 #!/bin/sh -e
-# Like sudoedit, but for doas. Every argument will be treated as a file to edit.
-# There's no support for passing arguments to doas, so you can only doas root.
-#
-# This script is SECURITY SENSITIVE! Special care has been taken to correctly
-# preserve file attributes. Please exercise CAUTION when modifying AND using
-# this script.
+
+help() {
+	cat - >&2 <<EOF
+doasedit - like sudoedit, but for doas
+
+doasedit file...
+
+Every argument will be treated as a file to edit. There's no support for
+passing arguments to doas, so you can only doas root.
+
+This script is SECURITY SENSITIVE! Special care has been taken to correctly
+preserve file attributes. Please exercise CAUTION when modifying AND using
+this script.
+EOF
+}
+
+case "$1" in
+	--help|-h) help; exit 0;;
+	*) ;;
+esac
 
 export TMPDIR=/dev/shm/
 trap 'rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM INT ABRT

@@ -1,43 +1,47 @@
 #!/bin/sh -ef
 # shellcheck disable=SC2086,SC1010
-#
-# Simple script to send/receive mail using busybox and openssl w/
-# SMTP/POP3.
-#
-# When any arguments are provided, this script will act like sendmail,
-# all arguments will be treated as recipient email addresses and the
-# standard input will be treated as mail to be sent.
-#
-# The following variables are required:
-#
-# MAILMAN_USERNAME:
-# 	Your username, usually your email address.
-# MAILMAN_URL:
-# 	The URL of the server (i.e. smtp.gmail.com:587). The port can
-# 	instead be specified with MAILMAN_PORT if desired.
-# MAILMAN_PASS_CMD or MAILMAN_PASS:
-# 	MAILMAN_PASS_CMD should be a command that will print your password.
-# 	Alternatively you can use MAILMAN_PASS to feed the password directly to
-# 	this script.
-#
-# The following variables are optional:
-#
-# MAILDIR
-# 	(POP only) The maildir to drop new mail into. Will default to ~/Mail
-# MAILMAN_MAIL_FROM
-# 	(SMTP only) This should be the email address your are sending mail
-# 	from.  This	will default to your MAILMAN_USERNAME.
-# MAILMAN_SSL_LEVEL
-# 	Possible values:
-#		0 = Disable all SSL/TLS
-#		1 = Explicit TLS
-#		2 = Implicit TLS
-# 	If unset the default will be 2.
-# MAILMAN_PORT
-# 	The port, if you don't want to specify one in MAILMAN_URL.
-# MAILMAN_NO_AUTH
-# 	Skip authorization checks.
-#
+
+help() {
+	cat - >&2 <<EOF
+mailman - send/receive mail using busybox+openssl w/ SMTP/POP3
+
+mailman [recipients]
+
+When any arguments are provided, this script will act like sendmail,
+all arguments will be treated as recipient email addresses and the
+standard input will be treated as mail to be sent.
+
+The following environment variables are required:
+
+MAILMAN_USERNAME:
+	Your username, usually your email address.
+MAILMAN_URL:
+	The URL of the server (e.g. smtp.gmail.com:587). The port can
+	instead be specified with MAILMAN_PORT if desired.
+MAILMAN_PASS_CMD or MAILMAN_PASS:
+	MAILMAN_PASS_CMD should be a command that will print your password.
+	Alternatively you can use MAILMAN_PASS to feed the password directly
+	to this script.
+
+The following environment variables are optional:
+
+MAILDIR
+	(POP only) The maildir to drop new mail into. Will default to ~/Mail
+MAILMAN_MAIL_FROM
+	(SMTP only) This should be the email address your are sending mail
+	from.  This	will default to your MAILMAN_USERNAME.
+MAILMAN_SSL_LEVEL
+	Possible values:
+		0 = Disable all SSL/TLS
+		1 = Explicit TLS
+		2 = Implicit TLS
+	If unset the default will be 2.
+MAILMAN_PORT
+	The port, if you don't want to specify one in MAILMAN_URL.
+MAILMAN_NO_AUTH
+	Skip authorization checks.
+EOF
+}
 
 check_dep() {
 	if ! command -v "$1" > /dev/null 2>&1; then
@@ -62,6 +66,11 @@ _nc() {
 		check_dep nc; busybox_has_applet nc; exit 1;
 	fi
 }
+
+case "$1" in
+	--help|-h) help; exit 0;;
+	*) ;;
+esac
 
 check_dep busybox || exit 1
 

@@ -2,9 +2,9 @@
 Type=Application
 Name=mpv Image Viewer
 GenericName=Image viewer
-Comment=mpv hacked into being an image viewer
+Comment=mpv hacked into the shape of an image viewer
 Icon=mpv
-Exec=mpv-img -- %U
+Exec=mpv_img -- %U
 Terminal=false
 Categories=AudioVideo;Audio;Video;Player;TV;
 MimeType=image/bmp;image/gif;image/jpeg;image/jpg;image/pjpeg;image/png;image/tiff;image/x-bmp;image/x-pcx;image/x-png;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-tga;image/x-xbitmap;

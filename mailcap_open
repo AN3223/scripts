@@ -1,66 +1,74 @@
 #!/bin/sh -ef
-# This is a file opener that uses the mailcap file for configuration and
-# shares (mostly) the same CLI as xdg-open:
-#
-# mailcap-open [file | URL]
-#
-# ...and the heavy lifting is done by the mailcap file(s) (see MAILCAPS
-# below). If the file is omitted or - then the standard input will be
-# read instead.
-#
-# IMPORTANT: Occurrences of %s must be double quoted (or unquoted if you
-# want word-splitting) in your mailcap files. This is because it is
-# actually substituted for a shell variable, not a filename. This is
-# done on purpose to avoid issues with special characters.
-# So don't single quote %s! It will cause errors! You have been warned!
-# Also don't forget to set the TERMCMD environment variable, see below.
-#
-# The following environment variables are used:
-#
-# TERMCMD
-#   The prefix command for spawning programs in a terminal, i.e. xterm
-#   -e for xterm. There is no default, this MUST be set if mailcap-open
-#   isn't being spawned from a terminal.
-#
-# MAILCAPS
-#   The colon-delimited mailcap search path defined in RFC 1524,
-#   defaults to:
-#   ~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
-#
-# MIMER
-#   The command used to get the mimetype of a file, defaults to:
-#   xdg-mime query filetype
-#
-# MCO_NEEDSTERMINAL
-#   If set, mailcap-open will always act like needsterminal is set.
-#   Useful for preventing mailcap-open from opening the file in the
-#   background.
-#
-# MCO_DOWNLOADER
-#   The command used to download URLs if MCO_HANDLER is unset, defaults to
-#   curl
-#
-# MCO_HANDLER
-#   A command that may override the handling of the file mailcap-open
-#   was invoked with (unless the file was stdin). A handler will be
-#   invoked like so:
-#
-#   handler {file | URL}
-#
-#   If MCO_HANDLER exits with an error code then mailcap-open will
-#   assume the handler has already opened the file and mailcap-open will
-#   do an early exit (never interpreting the mailcap file).
-#
-#   If MCO_HANDLER exits successfully then the mailcap will be
-#   interpreted as normal.
-#
-#   If MCO_HANDLER is unset then mailcap-open will default to using
-#   MCO_DOWNLOADER to handle URLs, and use the mailcap file for handling
-#   normal files.
-#
-#   Ideally a custom handler should always throw an error in the case of
-#   a URL.
-#
+
+help() {
+	cat - >&2 <<EOF
+mailcap_open - file opener based on mailcap files
+
+mailcap_open [file | URL]
+
+...and the heavy lifting is done by the mailcap file(s) (see MAILCAPS
+below). If the file argument is omitted or - then the standard input
+will be read instead.
+
+IMPORTANT: Occurrences of %s must be double quoted (or unquoted if you
+want word-splitting) in your mailcap files. This is because it is
+actually substituted for a shell variable, not a filename. This is
+done on purpose to avoid issues with special characters.
+So don't single quote %s! It will cause errors! You have been warned!
+Also don't forget to set the TERMCMD environment variable, see below.
+
+The following environment variables are used:
+
+TERMCMD
+	The prefix command for spawning programs in a terminal, e.g. xterm -e
+	for xterm. There is no default, this MUST be set if mailcap_open
+	isn't being spawned from a terminal.
+
+MAILCAPS
+	The colon-delimited mailcap search path defined in RFC 1524,
+	defaults to:
+		~/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap
+
+MIMER
+	The command used to get the mimetype of a file, defaults to:
+		xdg-mime query filetype
+
+MCO_NEEDSTERMINAL
+	If set, mailcap_open will always act like needsterminal is set.
+	Useful for preventing mailcap_open from opening the file in the
+	background.
+
+MCO_DOWNLOADER
+	The command used to download from URLs if MCO_HANDLER is unset,
+	defaults to curl
+
+MCO_HANDLER
+	A command that may override the handling of the file mailcap_open
+	was invoked with (unless the file was stdin). A handler will be
+	invoked like so:
+
+	handler {file | URL}
+
+	If MCO_HANDLER exits with an error code then mailcap_open will
+	assume the handler has already opened the file and mailcap_open will
+	do an early exit (never interpreting the mailcap file).
+
+	If MCO_HANDLER exits successfully then the mailcap will be
+	interpreted as normal.
+
+	If MCO_HANDLER is unset then mailcap_open will default to using
+	MCO_DOWNLOADER to handle URLs, and use the mailcap file for handling
+	normal files.
+
+	Ideally a custom handler should always throw an error in the case of
+	a URL.
+EOF
+}
+
+case "$1" in
+	--help|-h) help; exit 0;;
+	*) ;;
+esac
 
 FILENAME=${1:-'-'}
 MCO_DOWNLOADER=${MCO_DOWNLOADER:-curl -LSsf --}

@@ -1,15 +1,21 @@
 #!/bin/sh -e
-# mpvyt [-n num] query...
-#
-# Search for youtube videos and play them with mpv. Only plays 5 videos
-# by default, can be increased to any number with the -n option (giving
-# -n 0 will play an indefinite amount of videos)
-#
-# Beware that adding videos to the playlist takes time, so a high (or
-# 0) -n value might cause the first video to take a while to load.
+
+help() {
+	cat - >&2 <<EOF
+mpvyt - search for youtube videos and play them with mpv
+
+mpvyt [-n num] query...
+
+Only plays 5 videos by default, which can be increased to any number
+with the -n option (-n 0 will play an indefinite amount of videos)
+
+Beware that adding videos to the playlist takes time, so a high (or
+0) -n value might cause the first video to take quite a while to load.
+EOF
+}
 
 unset -v n
-while getopts 'n:' o; do
+while getopts 'hn:' o; do
 	case "$o" in
 		n)
 			if [ "$OPTARG" = 0 ]; then
@@ -18,8 +24,12 @@ while getopts 'n:' o; do
 				n="$OPTARG"
 			fi
 			;;
+		h)
+			help
+			exit 0
+			;;
 		*)
-			echo "Unrecognized option $o" >&2
+			help
 			exit 1
 			;;
 	esac
