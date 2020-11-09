@@ -51,7 +51,7 @@ check_dep() {
 }
 
 busybox_has_applet() {
-	if ! busybox --list | grep -Fxqe "$1"; then
+	if ! { busybox --list | grep -Fxqe "$1" ; }; then
 		echo "Oops, it seems like your busybox wasn't compiled with $1" >&2
 		return 1
 	fi
@@ -63,7 +63,7 @@ _nc() {
 	elif busybox_has_applet nc 2> /dev/null; then
 		busybox nc "$@"
 	else
-		check_dep nc; busybox_has_applet nc; exit 1;
+		exit 1
 	fi
 }
 
