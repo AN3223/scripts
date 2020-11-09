@@ -1,4 +1,33 @@
-#!/bin/sh
+#!/bin/sh -e
 
-mpv --config-dir="$HOME/.config/mpv-img/" "$@"
+exec <<-EOF
+	# Just pan with hjkl
+	h  add video-pan-x  0.02
+	j  add video-pan-y -0.02
+	k  add video-pan-y  0.02
+	l  add video-pan-x -0.02
+
+	# Zoom and pan with arrow keys
+	left  add video-pan-x  0.02
+	up    add video-zoom   0.05
+	down  add video-zoom  -0.05
+	right add video-pan-x -0.02
+
+	# Same as arrow keys for HJKL
+	H  add video-pan-x  0.02
+	J  add video-zoom  -0.05
+	K  add video-zoom   0.05
+	L  add video-pan-x -0.02
+
+	BS set video-pan-x 0 ; set video-zoom 0 ; set video-pan-y 0
+EOF
+
+exec mpv --no-config \
+	--mute=yes --sub-auto=no --term-status-msg= --no-osc --no-stop-screensaver \
+	--title='${?media-title:${media-title}}${!media-title:No file} - mpv_img' \
+	--profile=gpu-hq \
+	--cache=yes \
+	--image-display-duration=inf \
+	--input-conf=- \
+	"$@"
 
