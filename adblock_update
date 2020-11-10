@@ -1,0 +1,85 @@
+#!/bin/sh -e
+# /etc/cron.weekly/adblock-update
+#
+# This script expects the following files:
+# /etc/hosts.allowed
+#   a newline-separated list of IP addresses allowed in /etc/hosts
+# /etc/hosts.include
+#   will be appended to the top of /etc/hosts (prior to interpreting
+#   hosts.allowed)
+# /etc/hosts.exclude
+#   a newline-separated list of domains to exclude from /etc/hosts (the
+#   domains may contain globs)
+#
+
+# Ensure we don't use an old pending file
+rm -f /etc/hosts.pending
+
+date +'# curled on %c' >> /etc/hosts.pending
+
+if [ -r /etc/hosts.include ]; then
+	cat /etc/hosts.include >> /etc/hosts.pending
+fi
+
+curl -LSsf https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
+	>> /etc/hosts.pending
+
+if [ -r /etc/hosts.allowed ]; then
+	allowed=$(cat /etc/hosts.allowed)
+	exec < /etc/hosts.pending
+	while read -r ip _; do
+		unset -v verified
+		case "$ip" in
+			# skip comments and blank lines
+			''|\#*) continue ;;
+			*)
+				for allowed_ip in $allowed; do
+					if [ "$ip" = "$allowed_ip" ]; then
+						verified=1
+						continue
+					fi
+				done
+
+				if [ "$verified" ]; then
+					continue
+				else
+					echo "$ip not allowed, see /etc/hosts.pending" >&2
+					exit 1
+				fi
+				;;
+		esac
+	done
+fi
+
+if [ -r /etc/hosts.exclude ]; then
+	exclude=$(cat /etc/hosts.exclude)
+	tmp=/etc/hosts.pending.excluding...
+	exec < /etc/hosts.pending
+	while read -r ip domain; do
+		# skip comments and blank lines
+		case "$ip" in
+			''|\#*) printf '%s\n' "$ip $domain" >> "$tmp"; continue ;;
+			*) ;;
+		esac
+
+		unset -v skip
+		for excluded_domain in $exclude; do
+			# shellcheck disable=SC2254 # (allow globbing)
+			case "$domain" in
+				$excluded_domain) skip=1 ;;
+				*) ;;
+			esac
+		done
+
+		if [ "$skip" ]; then
+			continue
+		else
+			printf '%s\n' "$ip $domain" >> "$tmp"
+		fi
+	done
+	mv "$tmp" /etc/hosts.pending
+fi
+
+cat /etc/hosts.pending > /etc/hosts
+rm -f /etc/hosts.pending
+
