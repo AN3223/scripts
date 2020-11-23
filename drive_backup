@@ -6,6 +6,8 @@
 # a passphrase.
 #
 
+export POSIXLY_CORRECT=1
+
 encrypt() {
 	gpg2 --encrypt --default-recipient-self \
 		-z 9 --batch --no-tty --yes

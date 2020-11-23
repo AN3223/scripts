@@ -67,6 +67,8 @@ _nc() {
 	fi
 }
 
+export POSIXLY_CORRECT=1
+
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -113,7 +115,7 @@ fi
 
 # fill in some gaps
 [ "$MAILMAN_MAIL_FROM" ] || MAILMAN_MAIL_FROM="$MAILMAN_USERNAME"
-[ ! "$MAILMAN_PASS_CMD" ] || MAILMAN_PASS=$($MAILMAN_PASS_CMD)
+[ ! "$MAILMAN_PASS_CMD" ] || MAILMAN_PASS=$(POSIXLY_CORRECT="" $MAILMAN_PASS_CMD)
 [ ! "$MAILMAN_PORT" ] || MAILMAN_URL="${MAILMAN_URL}:${MAILMAN_PORT}"
 CREDS="$MAILMAN_USERNAME
 $MAILMAN_PASS"

@@ -2,7 +2,9 @@
 # A shell script for making shell scripts. Automates creating a shebang +
 # setting the execute bit. Won't overwrite existing files.
 
+export POSIXLY_CORRECT=1
+
 echo '#!/bin/sh -e' > "$1"
 chmod u+x "$1"
-exec ${EDITOR:-vi} "$1"
+POSIXLY_CORRECT="" exec ${EDITOR:-vi} "$1"
 

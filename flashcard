@@ -14,6 +14,8 @@ you if you were incorrect.
 EOF
 }
 
+export POSIXLY_CORRECT=1
+
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;

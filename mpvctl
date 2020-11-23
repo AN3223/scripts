@@ -19,6 +19,8 @@ mpv_send() {
 	done
 }
 
+export POSIXLY_CORRECT=1
+
 if ! command -v socat > /dev/null; then
 	echo 'socat must be installed' >&2
 	exit 1

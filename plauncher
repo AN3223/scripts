@@ -41,6 +41,8 @@ write_history() {
 	EOF
 }
 
+export POSIXLY_CORRECT=1
+
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -174,8 +176,8 @@ fi
 [ "$anonymous" ] || write_history "$cmd"
 
 if [ "$*" ]; then
-	exec "$@" "${terminal:+$TERMCMD }$cmd"
+	POSIXLY_CORRECT="" exec "$@" "${terminal:+$TERMCMD }$cmd"
 else
-	eval exec "${terminal:+$TERMCMD }$cmd"
+	eval POSIXLY_CORRECT="" exec "${terminal:+$TERMCMD }$cmd"
 fi
 
