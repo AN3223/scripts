@@ -131,9 +131,7 @@ while :; do
 			unset -v cmd cursor list_length appended
 			;;
 		"$KEY_CTRL_W") # delete last word from line
-			# XXX: this deletes words awkwardly compared to other
-			# programs
-			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
+			cmd=$(sed 's/[^ ]*[ ]*$//') <<-EOF
 				$cmd
 			EOF
 			unset -v cursor list_length appended
