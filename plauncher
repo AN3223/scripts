@@ -63,6 +63,8 @@ KEY_CTRL_N=$(printf '\016')
 KEY_ESCAPE=$(printf '\033')
 KEY_TAB=$(printf '\t')
 EL=$(printf '\033[K')
+ED=$(printf '\033[J')
+CP=$(printf '\033[H')
 NL="
 "
 
@@ -83,8 +85,10 @@ while :; do
 			cmd_ctx="${cmd%% *}"
 			cmd="${cmd#[0-9] }"
 		esac
+
+		printf "\r> %s$ED" "$cmd" >&2
 	elif [ ! "$list" ] && [ "$appended" ]; then
-		: # don't rerender if we know there won't be anything to render
+		printf '%s' "$c"
 	else
 		list=$(grep -Fie "$cmd" || :) <<-EOF
 			$history_cache
@@ -92,15 +96,10 @@ while :; do
 		visual_list=$(sed "s/$/$EL/g ; s/^[0-9] //g") <<-EOF
 			$list
 		EOF
+
+		printf "$CP%s" "${list:+${visual_list}${NL}}" >&2
+		printf "\r> %s$ED" "$cmd" >&2
 	fi
-
-	# crazy parameter expansion just prevents stray newlines
-	printf '\033[H%s' "${list:+${visual_list}${NL}}" >&2
-
-	# print prompt w/ current command
-	# XXX: could optimize by only printing one character if visual_list
-	# wasn't updated
-	printf '\r> %s\033[J' "$cmd" >&2
 
 	c=$(getch)
 	[ "$c" ] || break
