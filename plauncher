@@ -68,6 +68,7 @@ NL="
 
 # ensure $PLAUNCHER_HISTORY is set and the file exists
 : >> "${PLAUNCHER_HISTORY:="${HOME:?}/.plauncher"}"
+history_cache=$(cat "$PLAUNCHER_HISTORY")
 
 stty -icanon -echo -nl
 unset -v cmd cursor list_length appended
@@ -85,8 +86,9 @@ while :; do
 	elif [ ! "$list" ] && [ "$appended" ]; then
 		: # don't rerender if we know there won't be anything to render
 	else
-		# XXX: config should probably be cached
-		list=$(grep -Fie "$cmd" < "$PLAUNCHER_HISTORY" || :)
+		list=$(grep -Fie "$cmd" || :) <<-EOF
+			$history_cache
+		EOF
 		visual_list=$(sed "s/$/$EL/g ; s/^[0-9] //g") <<-EOF
 			$list
 		EOF
