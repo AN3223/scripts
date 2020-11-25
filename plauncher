@@ -34,11 +34,15 @@ getch() { dd bs=1 count=1 2> /dev/null ; }
 cleanterm() { stty sane; printf '\n'; }
 
 write_history() {
-	deduped=$(grep -Fxve "$1" < "$CONFDIR/recent" || :)
-	cat > "$CONFDIR/recent" <<-EOF
-		$deduped
-		$1
-	EOF
+	if [ "$anonymous" ]; then
+		return 0
+	else
+		deduped=$(grep -Fxve "$*" -e "$2" < "$PLAUNCHER_HISTORY" || :)
+		cat > "$PLAUNCHER_HISTORY" <<-EOF
+			$deduped
+			$*
+		EOF
+	fi
 }
 
 export POSIXLY_CORRECT=1
@@ -62,10 +66,8 @@ EL=$(printf '\033[K')
 NL="
 "
 
-# Ensure all of the config files exist
-CONFDIR="${XDG_CONFIG_HOME:-${HOME:?}/.config}/plauncher"
-mkdir -p "$CONFDIR"
-: >> "$CONFDIR/recent" >> "$CONFDIR/background" >> "$CONFDIR/terminal"
+# ensure $PLAUNCHER_HISTORY is set and the file exists
+: >> "${PLAUNCHER_HISTORY:="${HOME:?}/.plauncher"}"
 
 stty -icanon -echo -nl
 unset -v cmd cursor list_length appended
@@ -74,21 +76,28 @@ while :; do
 		cmd=$(sed -n "${cursor}p") <<-EOF
 			$list
 		EOF
+
+		# handle the command context (background/terminal) number if available
+		case "${cmd%% *}" in [0-9])
+			cmd_ctx="${cmd%% *}"
+			cmd="${cmd#[0-9] }"
+		esac
 	elif [ ! "$list" ] && [ "$appended" ]; then
 		: # don't rerender if we know there won't be anything to render
 	else
-		# only render the history if the history isn't being traversed
-		list=$(grep -Fie "$cmd" < "$CONFDIR/recent" || :)
-		# place EL characters at the end of each line to clear garbage
-		list_w_el=$(sed "s/$/$EL/") <<-EOF
+		# XXX: config should probably be cached
+		list=$(grep -Fie "$cmd" < "$PLAUNCHER_HISTORY" || :)
+		visual_list=$(sed "s/$/$EL/g ; s/^[0-9] //g") <<-EOF
 			$list
 		EOF
 	fi
 
 	# crazy parameter expansion just prevents stray newlines
-	printf '\033[H%s' "${list:+${list_w_el}${NL}}" >&2
+	printf '\033[H%s' "${list:+${visual_list}${NL}}" >&2
 
 	# print prompt w/ current command
+	# XXX: could optimize by only printing one character if visual_list
+	# wasn't updated
 	printf '\r> %s\033[J' "$cmd" >&2
 
 	c=$(getch)
@@ -121,6 +130,8 @@ while :; do
 			unset -v cmd cursor list_length appended
 			;;
 		"$KEY_CTRL_W") # delete last word from line
+			# XXX: this deletes words awkwardly compared to other
+			# programs
 			cmd=$(sed 's/[ ]*[^ ]*$//') <<-EOF
 				$cmd
 			EOF
@@ -144,7 +155,6 @@ while :; do
 			;;
 	esac
 done
-cleanterm
 
 case "$cmd" in
 	' '*) anonymous=1 ;;
@@ -152,28 +162,22 @@ case "$cmd" in
 	*) unset -v anonymous ;;
 esac
 
-unset -v terminal
-if grep -Fxqe "$cmd" < "$CONFDIR/terminal"; then
-	terminal=1
-elif grep -Fxqe "$cmd" < "$CONFDIR/background"; then
-	:
-else
+if [ ! "$cmd_ctx" ]; then
+	printf '\n'
 	printf '%s\n' "How should $cmd be ran?" \
 		'[1] terminal' \
 		'[2] background (default)' >&2
-	read -r answer
-	case "$answer" in
-		1)
-			[ "$anonymous" ] || printf '%s\n' "$cmd" >> "$CONFDIR/terminal"
-			terminal=1
-			;;
-		*)
-			[ "$anonymous" ] || printf '%s\n' "$cmd" >> "$CONFDIR/background"
-			;;
-	esac
+	cmd_ctx=$(getch)
 fi
 
-[ "$anonymous" ] || write_history "$cmd"
+cleanterm
+
+case "$cmd_ctx" in
+	1) terminal=1 ;;
+	*) unset -v terminal; cmd_ctx=2 ;;
+esac
+
+write_history "$cmd_ctx" "$cmd"
 
 if [ "$*" ]; then
 	POSIXLY_CORRECT="" exec "$@" "${terminal:+$TERMCMD }$cmd"
