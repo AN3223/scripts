@@ -1,0 +1,107 @@
+#!/bin/sh -e
+
+help() {
+	cat - >&2 <<EOF
+This script emulates DuckDuckGo's "bangs" feature, but with some added
+benefits:
+	1. The links are generated locally, which saves time, especially on
+	slow connections.
+	2. This script is fully configurable and extensible. You can add new
+	bangs through the ~/.bangs file, described below. You can also
+	define a default search engine for this script through the
+	DEFAULT_BANG variable described below.
+	3. This script will try to generate links for the non-JS versions of
+	websites, such as mobile.twitter.com instead of twitter.com so
+	this script can be useful for web browsers without JavaScript.
+	4. Links can be generated for non-HTTP content, such as Gopher
+
+Environment variables used by this script:
+
+BROWSER: (default: xdg-open)
+	The browser you want to open the link in. You might want to set
+	this to your preferred web browser. This can be any	command (i.e.
+	echo if you just want to print the link).
+
+DEFAULT_BANG: (default: !duckduckgo)
+	The default bang if no bang is provided.
+
+The ~/.bangs (or \$BANGS) file:
+	This file allows you to define your own bangs which take priority
+	over this script's builtin bangs. The location of the file can be
+	overriden with the \$BANG variable. Here's an example:
+
+	case "\$bang" in
+		!g) link="https://www.google.com/search?q=\$*" ;;
+		!a) link="https://www.amazon.com/s/?field-keywords=\$*" ;;
+	esac
+EOF
+}
+
+case "$1" in
+	-h|--help) help; exit 0 ;;
+	!*) bang="$1"; shift 1 ;;
+	*) bang="${DEFAULT_BANG:-!duckduckgo}" ;;
+esac
+
+if [ -r "${BANGS:=${HOME:?}/.bangs}" ]; then
+	. "$BANGS" "$@"
+fi
+
+if [ ! "$link" ]; then
+case "$bang" in
+!archaur|!aur) link="https://aur.archlinux.org/packages.php?K=$*" ;;
+!archive) link="https://archive.org/search.php?query=$*" ;;
+!archived|!wayback|!wb|!wbm) link="https://web.archive.org/web/*/$*" ;;
+!archlinux) link="https://bbs.archlinux.org/search.php?keywords=$*" ;;
+!archpkg|!archpackages) link="https://www.archlinux.org/packages/?q=$*" ;;
+!arch|!archwiki) link="https://wiki.archlinux.org/index.php/$*" ;;
+!a|!amazon) link="https://www.amazon.com/s/?field-keywords=$*" ;;
+!ddg|!duckduckgo) link="https://duckduckgo.com/lite?q=$*" ;;
+!e|!ebay) link="https://www.ebay.com/sch/i.html?_nkw=$*" ;;
+!gb) link="https://www.google.com/search?q=$*&tbm=bks" ;;
+!gentoopkg|!gentoopackage) link="https://packages.gentoo.org/packages/search?q=$*" ;;
+!gentoo|!gentoowiki) link="https://wiki.gentoo.org/?search=$*" ;;
+!gh|!github) link="https://github.com/search?q=$*" ;;
+!gi) link="https://www.google.com/search?q=$*&tbm=isch" ;;
+!gm) link="https://www.google.com/maps/search/$*" ;;
+!gn) link="https://news.google.com/search?q=$*" ;;
+!gp|!gw|!gopherpedia) link="gopher://gopherpedia.com/7/lookup%09$*" ;;
+!gs) link="https://www.google.com/search?q=$*&tbm=shop" ;;
+!gt) link="https://translate.google.com/?text=$*" ;;
+!gv) link="https://www.google.com/search?q=$*&tbm=video" ;;
+!g|!google) link="https://www.google.com/search?q=$*" ;;
+!hackage) link="https://hackage.haskell.org/packages/search?terms=$*" ;;
+!hn|!hackernews) link="https://hn.algolia.com/?q=$*" ;;
+!h|!hoogle) link="https://hoogle.haskell.org/?hoogle=$*" ;;
+!imdb) link="https://www.imdb.com/find?q=$*" ;;
+!nethack) link="https://nethackwiki.com/wiki/?search=$*" ;;
+!phoronix) link="https://www.phoronix.com/scan.php?page=search&q=$*" ;;
+!p|!pinterest) link="https://www.pinterest.com/search/pins/?q=$*" ;;
+!r|!reddit) link="https://old.reddit.com/search?q=$*" ;;
+!so|!stackoverflow) link="https://stackoverflow.com/search?q=$*" ;;
+!ste|!steam) link="https://store.steampowered.com/search/?term=$*" ;;
+!tgb|!thegopherbay) link="gopher://bay.parazy.de:666/7/q.dcgi?%09$*" ;;
+!tpb10|!thepiratebay10) link="https://thepiratebay10.org/search/$*" ;;
+!tpbl|!piratebaylive) link="https://piratebay.live/search/$*" ;;
+!tpb|!thepiratebay) link="https://thepiratebay.org/search.php?q=$*" ;;
+!twitch) link="https://www.twitch.tv/$*" ;;
+!twitchg) link="https://www.twitch.tv/directory/game/$*" ;;
+!tw|!twitter) link="https://mobile.twitter.com/search?q=$*" ;;
+!v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs%09$*" ;;
+!w) link="https://wikipedia.org/w/index.php?search=$*&ns0=1" ;;
+!w??) link="https://${bang#!w}.wikipedia.org/w/index.php?search=$*&ns0=1" ;;
+!wa|!wolf|!wolfram) link="https://www.wolframalpha.com/input/?i=$*" ;;
+!wt) link="https://wiktionary.org/wiki/$*" ;;
+!wt??) link="https://${bang#!wt}.wiktionary.org/wiki/$*" ;;
+!yt|!youtube) link="https://www.youtube.com/results?search_query=$*" ;;
+!zillow) link="https://www.zillow.com/homes/$*_rb" ;;
+*)
+	printf '%s\n' "unknown bang $bang" >&2
+	help
+	exit 1
+	;;
+esac
+fi
+
+eval exec "${BROWSER:-xdg-open}" '"$link"'
+
