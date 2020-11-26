@@ -18,7 +18,7 @@ fi
 
 cat "$tmpd/plain" > "$tmpd/plain_copy"
 
-POSIXLY_CORRECT="" ${EDITOR:-vi} "$tmpd/plain"
+(unset -v POSIXLY_CORRECT; ${EDITOR:-vi} "$tmpd/plain")
 
 if ! cmp -s "$tmpd/plain" "$tmpd/plain_copy"; then
 	gpg --default-recipient-self -o "$1" -e "$tmpd/plain"

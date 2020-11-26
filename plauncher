@@ -178,9 +178,10 @@ esac
 
 write_history "$cmd_ctx" "$cmd"
 
+unset -v POSIXLY_CORRECT
 if [ "$*" ]; then
-	POSIXLY_CORRECT="" exec "$@" "${terminal:+$TERMCMD }$cmd"
+	exec "$@" "${terminal:+$TERMCMD }$cmd"
 else
-	eval POSIXLY_CORRECT="" exec "${terminal:+$TERMCMD }$cmd"
+	eval exec "${terminal:+$TERMCMD }$cmd"
 fi
 

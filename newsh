@@ -6,5 +6,7 @@ export POSIXLY_CORRECT=1
 
 echo '#!/bin/sh -e' > "$1"
 chmod u+x "$1"
-POSIXLY_CORRECT="" exec ${EDITOR:-vi} "$1"
+
+unset -v POSIXLY_CORRECT
+exec ${EDITOR:-vi} "$1"
 
