@@ -133,7 +133,7 @@ if [ "$SMTP" ]; then
 		EOF
 elif [ "$POP" ]; then
 	busybox_has_applet popmaildir || exit 1
-	busybox popmaildir "${MAILDIR:-"$HOME/Mail"}" -- \
+	busybox popmaildir "${MAILDIR:-"$HOME/Mail"}" \
 		${SSL:+openssl s_client -quiet ${EXPLICIT_TLS:+-starttls pop3} -connect} \
 		${NO_SSL:+_nc} \
 		"$MAILMAN_URL" \
