@@ -11,8 +11,8 @@ benefits:
 	define a default search engine for this script through the
 	DEFAULT_BANG variable described below.
 	3. This script will try to generate links for the non-JS versions of
-	websites, such as mobile.twitter.com instead of twitter.com so
-	this script can be useful for web browsers without JavaScript.
+	websites so this script can be useful for web browsers without
+	JavaScript.
 	4. Links can be generated for non-HTTP content, such as Gopher
 
 Environment variables used by this script:
@@ -86,7 +86,7 @@ case "$bang" in
 !tpb|!thepiratebay) link="https://thepiratebay.org/search.php?q=$*" ;;
 !twitch) link="https://www.twitch.tv/$*" ;;
 !twitchg) link="https://www.twitch.tv/directory/game/$*" ;;
-!tw|!twitter) link="https://mobile.twitter.com/search?q=$*" ;;
+!tw|!twitter) link="https://twitter.com/search?q=$*" ;;
 !v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs%09$*" ;;
 !w) link="https://wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !w??) link="https://${bang#!w}.wikipedia.org/w/index.php?search=$*&ns0=1" ;;
