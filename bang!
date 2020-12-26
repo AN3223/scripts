@@ -86,7 +86,7 @@ case "$bang" in
 !tpb|!thepiratebay) link="https://thepiratebay.org/search.php?q=$*" ;;
 !twitch) link="https://www.twitch.tv/$*" ;;
 !twitchg) link="https://www.twitch.tv/directory/game/$*" ;;
-!tw|!twitter) link="https://twitter.com/search?q=$*" ;;
+!tw|!twitter) link="https://nitter.net/search?q=$*" ;;
 !v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs%09$*" ;;
 !w) link="https://wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !w??) link="https://${bang#!w}.wikipedia.org/w/index.php?search=$*&ns0=1" ;;
