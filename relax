@@ -48,16 +48,16 @@ esac
 
 case "$backend" in
 	ffplay)
-		ffplay -nodisp -f lavfi -i "$lavfifilter"
+		exec ffplay -nodisp -f lavfi -i "$lavfifilter"
 		;;
 	mpv)
-		mpv --no-resume-playback av://lavfi:"$lavfifilter"
+		exec mpv --no-resume-playback av://lavfi:"$lavfifilter"
 		;;
 	ffmpeg)
-		ffmpeg -f lavfi -i "$lavfifilter" -f alsa default
+		exec ffmpeg -f lavfi -i "$lavfifilter" -f alsa default
 		;;
 	sox)
-		play -Gn \
+		exec play -Gn \
 			synth brownnoise \
 			tremolo 0.10 10 \
 			tremolo 0.16 20 \
