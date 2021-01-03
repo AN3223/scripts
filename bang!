@@ -93,7 +93,7 @@ case "$bang" in
 !wa|!wolf|!wolfram) link="https://www.wolframalpha.com/input/?i=$*" ;;
 !wt) link="https://wiktionary.org/wiki/$*" ;;
 !wt??) link="https://${bang#!wt}.wiktionary.org/wiki/$*" ;;
-!yt|!youtube) link="https://invidious.snopyta.org/search?q=$*" ;;
+!yt|!youtube) link="https://yewtu.be/search?q=$*" ;;
 !zillow) link="https://www.zillow.com/homes/$*_rb" ;;
 *)
 	printf '%s\n' "unknown bang $bang" >&2
