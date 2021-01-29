@@ -21,7 +21,7 @@ EOF
 
 export POSIXLY_CORRECT=1
 
-lavfifilter="anoisesrc=color=brown,afade=type=in:duration=45,tremolo=f=0.1:d=0.1,tremolo=f=0.16:d=0.2"
+lavfifilter="anoisesrc=color=brown,afade=type=in:duration=90,tremolo=f=0.1:d=0.1,tremolo=f=0.16:d=0.2"
 
 case "$1" in
 	--ffplay)  backend=ffplay ;;
@@ -61,7 +61,7 @@ case "$backend" in
 			synth brownnoise \
 			tremolo 0.10 10 \
 			tremolo 0.16 20 \
-			fade t 45
+			fade t 90
 		;;
 esac
 
