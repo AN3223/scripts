@@ -38,7 +38,7 @@ for file; do
 	tmpcopy="$(mktemp)"
 	cat "$tmp" > "$tmpcopy"
 
-	POSIXLY_CORRECT="" ${EDITOR:-vi} "$tmp"
+	(unset -v POSIXLY_CORRECT; ${EDITOR:-vi} "$tmp")
 
 	if cmp -s "$tmp" "$tmpcopy"; then
 		echo 'File unchanged, exiting...'
