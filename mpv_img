@@ -30,6 +30,7 @@ exec mpv --no-config \
 	--profile=gpu-hq \
 	--cache=yes \
 	--image-display-duration=inf \
+	--no-keepaspect-window \
 	--input-conf=- \
 	${WAYLAND_DISPLAY:+--gpu-context=waylandvk} \
 	"$@"
