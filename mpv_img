@@ -22,12 +22,16 @@ exec 4<<-EOF
 	L  add video-pan-x -0.02
 
 	BS set video-pan-x 0 ; set video-zoom 0 ; set video-pan-y 0
+
+	> repeatable playlist-next
+	< repeatable playlist-prev
 EOF
 
 exec mpv --no-config \
 	--mute=yes --sub-auto=no --term-status-msg= --no-osc --no-stop-screensaver \
 	--title='${?media-title:${media-title}}${!media-title:No file} - mpv_img' \
 	--profile=gpu-hq \
+	--hwdec=auto-safe \
 	--cache=yes \
 	--image-display-duration=inf \
 	--no-keepaspect-window \
