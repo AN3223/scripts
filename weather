@@ -1,0 +1,24 @@
+#!/bin/sh -e
+# weather zone address...
+#
+# Sends an email to yourself with the daily weather forecast
+#
+# This script needs curl, w3m, and a mail delivery agent (defaults to
+# mail, you can set it to mutt or anything else with a compatible CLI
+# with the SENDMAIL environment variable, i.e., export SENDMAIL=mutt)
+#
+# To get your zone, go to https://www.weather.gov/ and enter your ZIP
+# code into the "Local Forecast by..." textbox, hit GO, then copy
+# everything in the URL after the ?
+#
+
+html=$(curl -LSsf --retry 10 "https://forecast.weather.gov/MapClick.php?$1&FcstType=text&TextType=1")
+txt=$(w3m -T text/html -dump) <<-EOF
+	$html
+EOF
+
+shift 1
+${SENDMAIL:-mail} -s "Weather $(date '+%A, %B %d')" -- "$@" <<-EOF
+	$txt
+EOF
+
