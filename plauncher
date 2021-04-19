@@ -70,8 +70,8 @@ NL="
 
 # ensure $PLAUNCHER_HISTORY is set and the file exists
 : >> "${PLAUNCHER_HISTORY:="${HOME:?}/.plauncher"}"
-history_cache=$(cat "$PLAUNCHER_HISTORY")
 
+trap 'cleanterm' EXIT QUIT TERM INT ABRT
 stty -icanon -echo -nl
 unset -v cmd cursor list_length appended
 while :; do
@@ -81,8 +81,8 @@ while :; do
 		EOF
 
 		# handle the command context (background/terminal) number if available
-		case "${cmd%% *}" in [0-9])
-			cmd_ctx="${cmd%% *}"
+		case "$cmd" in [0-9]' '*)
+			cmdctx="${cmd%% *}"
 			cmd="${cmd#[0-9] }"
 		esac
 
@@ -90,9 +90,7 @@ while :; do
 	elif [ ! "$list" ] && [ "$appended" ]; then
 		printf '%s' "$c"
 	else
-		list=$(grep -Fie "$cmd" || :) <<-EOF
-			$history_cache
-		EOF
+		list=$(grep -Fie "$cmd" < "$PLAUNCHER_HISTORY" || :)
 		visual_list=$(sed "s/$/$EL/g ; s/^[0-9] //g") <<-EOF
 			$list
 		EOF
@@ -102,12 +100,7 @@ while :; do
 	fi
 
 	c=$(getch)
-	[ "$c" ] || break
 	case "$c" in
-		"$KEY_ESCAPE")
-			cleanterm
-			exit 0
-			;;
 		"$KEY_CTRL_P"|"$KEY_TAB")
 			if [ "$cursor" ]; then
 				if [ "$cursor" -gt 1 ]; then
@@ -127,30 +120,33 @@ while :; do
 				unset -v cmd cursor list_length appended
 			fi
 			;;
-		"$KEY_CTRL_U") # clear line
-			unset -v cmd cursor list_length appended
-			;;
 		"$KEY_CTRL_W") # delete last word from line
 			cmd=$(sed 's/[^ ]*[ ]*$//') <<-EOF
 				$cmd
 			EOF
 			unset -v cursor list_length appended
 			;;
-		"$KEY_BACKSPACE")
-			cmd=${cmd%?}
-			unset -v cursor list_length appended
-			;;
+		"$KEY_BACKSPACE") cmd=${cmd%?}; unset -v cursor list_length appended ;;
+		'')	break ;; # Enter
+		"$KEY_CTRL_U") unset -v cmd cursor list_length appended ;;
+		"$KEY_ESCAPE") cleanterm; exit 0 ;;
 		*)
-			# only append characters to the command if they aren't
-			# whacky characters
-			cval=$(od -A n -N 1 -t u1) <<-EOF
-				$c
-			EOF
-			if [ "$cval" -ge 32 ]; then
-				cmd="${cmd}${c}"
-				appended=1
-				unset -v cursor list_length
-			fi
+			# only append non-whacky characters to the command
+			# case trick saves a lot of time, noticeable when pasting
+			case "$c" in
+				[!' '-'~'])
+					cval=$(od -A n -N 1 -t u1) <<-EOF
+						$c
+					EOF
+					if [ "$cval" -lt 32 ]; then
+						continue
+					fi
+					;;
+				*) ;;
+			esac
+			cmd="${cmd}${c}"
+			appended=1
+			unset -v cursor list_length
 			;;
 	esac
 done
@@ -161,22 +157,23 @@ case "$cmd" in
 	*) unset -v anonymous ;;
 esac
 
-if [ ! "$cmd_ctx" ]; then
+if [ ! "$cmdctx" ]; then
 	printf '\n'
 	printf '%s\n' "How should $cmd be ran?" \
 		'[1] terminal' \
 		'[2] background (default)' >&2
-	cmd_ctx=$(getch)
+	cmdctx=$(getch)
 fi
 
 cleanterm
 
-case "$cmd_ctx" in
+case "$cmdctx" in
 	1) terminal=1 ;;
-	*) unset -v terminal; cmd_ctx=2 ;;
+	"$KEY_ESCAPE") exit 0 ;;
+	*) unset -v terminal; cmdctx=2 ;;
 esac
 
-write_history "$cmd_ctx" "$cmd"
+write_history "$cmdctx" "$cmd"
 
 unset -v POSIXLY_CORRECT
 if [ "$*" ]; then
