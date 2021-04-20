@@ -8,7 +8,7 @@
 
 export POSIXLY_CORRECT=1
 
-push() { drive push -no-prompt -force -piped "$@"; }
+push() { drive push -no-prompt -force -hidden -piped "$@"; }
 encrypt() {
 	gpg2 --encrypt --default-recipient-self \
 		-z 9 --batch --no-tty --yes
