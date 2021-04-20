@@ -8,27 +8,25 @@
 
 export POSIXLY_CORRECT=1
 
+push() { drive push -no-prompt -force -piped "$@"; }
 encrypt() {
 	gpg2 --encrypt --default-recipient-self \
 		-z 9 --batch --no-tty --yes
 }
 
-push() {(
-	cd "$DRIVEDIR"
-	drive push -no-prompt -force -piped "$@"
-)}
-
-if [ ! "$DRIVEDIR" ]; then
-	echo 'Set $DRIVEDIR to point to the mount directory for drive' >&2
-	exit 1
-fi
+cd "${DRIVEDIR?Set \$DRIVEDIR to point to the mount directory for drive}"
+mkdir -p ~/.dbackup
 
 for path; do
-	basename=$(basename "$path")
+	bn=$(basename "$path")
+	if [ -f ~/.dbackup/"$bn" ] && [ ! "$(find "$path" -newer ~/.dbackup/"$bn")" ]; then
+		continue
+	fi
+	touch ~/.dbackup/"$bn"
 	if [ -f "$path" ]; then
-		encrypt < "$path" | push "$basename.gpg"
+		encrypt < "$path" | push "$bn.gpg"
 	elif [ -d "$path" ]; then
-		tar -c "$path" | encrypt | push "$basename.tar.gpg"
+		tar -c "$path" | encrypt | push "$bn.tar.gpg"
 	fi
 done
 
