@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-export POSIXLY_CORRECT=1
-
 exec 4<<-EOF
 	# Just pan with hjkl
 	h  add video-pan-x  0.02

@@ -14,8 +14,6 @@ Beware that adding videos to the playlist takes time, so a high (or
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 unset -v n
 while getopts 'hn:' o; do
 	case "$o" in
@@ -26,14 +24,8 @@ while getopts 'hn:' o; do
 				n="$OPTARG"
 			fi
 			;;
-		h)
-			help
-			exit 0
-			;;
-		*)
-			help
-			exit 1
-			;;
+		h) help; exit 0 ;;
+		*) help; exit 1 ;;
 	esac
 done
 shift $((OPTIND-1))

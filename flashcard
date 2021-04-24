@@ -14,8 +14,6 @@ you if you were incorrect.
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -28,9 +26,12 @@ while :; do
 	echo "$front"
 	printf '> '
 	read -r response
-	if [ "$response" = "$back" ]; then
-		printf '\n----------------\nCorrect!\n----------------\n\n'
-	else
-		printf '\n----------------\nThe correct answer was %s\n----------------\n\n' "$back"
-	fi
+	case "$response" in
+		"$back")
+			printf '\n----------------\nCorrect!\n----------------\n\n'
+			;;
+		*)
+			printf '\n----------------\nThe correct answer was %s\n----------------\n\n' "$back"
+			;;
+	esac
 done

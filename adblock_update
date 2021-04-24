@@ -12,8 +12,6 @@
 #   domains may contain globs)
 #
 
-export POSIXLY_CORRECT=1
-
 # Ensure we don't use an old pending file
 rm -f /etc/hosts.pending
 

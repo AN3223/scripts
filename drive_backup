@@ -6,8 +6,6 @@
 # a passphrase.
 #
 
-export POSIXLY_CORRECT=1
-
 push() { drive push -no-prompt -force -hidden -piped "$@"; }
 encrypt() {
 	gpg2 --encrypt --default-recipient-self \
@@ -18,7 +16,10 @@ cd "${DRIVEDIR?Set \$DRIVEDIR to point to the mount directory for drive}"
 mkdir -p ~/.dbackup
 
 for path; do
+	case "$path" in -*) path=./"$path" ;; esac
 	bn=$(basename "$path")
+	case "$bn" in -*) bn=./"$bn" ;; esac
+
 	if [ -f ~/.dbackup/"$bn" ] && [ ! "$(find "$path" -newer ~/.dbackup/"$bn")" ]; then
 		continue
 	fi

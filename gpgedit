@@ -3,7 +3,6 @@
 # don't trust this script and please let me know if I'm doing something
 # wrong.
 
-export POSIXLY_CORRECT=1
 export TMPDIR=/dev/shm/
 trap 'rm -rf "$tmpd"' EXIT TERM QUIT HUP INT ABRT
 tmpd=$(mktemp -d)
@@ -18,7 +17,7 @@ fi
 
 cat "$tmpd/plain" > "$tmpd/plain_copy"
 
-(unset -v POSIXLY_CORRECT; ${EDITOR:-vi} "$tmpd/plain")
+${EDITOR:-vi} "$tmpd/plain"
 
 if ! cmp -s "$tmpd/plain" "$tmpd/plain_copy"; then
 	gpg --default-recipient-self -o "$1" -e "$tmpd/plain"

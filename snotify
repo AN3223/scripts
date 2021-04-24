@@ -31,14 +31,13 @@ The following options are recognized:
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
 esac
 
-NOTIFY_FILE=$HOME/.snotify
+: "${SNOTIFY_FILE:="$HOME"/.snotify}"
+case "$SNOTIFY_FILE" in -*) SNOTIFY_FILE=./"$SNOTIFY_FILE" ;; esac
 
 # read stdin before grabbing lock, since reading stdin may take a while
 if [ "$1" = '-' ]; then
@@ -47,7 +46,7 @@ if [ "$1" = '-' ]; then
 fi
 
 # try to use a good lock implementation, fall back to something dirtier
-LOCK=$NOTIFY_FILE.lock
+LOCK=$SNOTIFY_FILE.lock
 if command -v flock > /dev/null 2>&1; then
 	exec 9> "$LOCK"
 	while ! flock -n 9; do
@@ -65,28 +64,28 @@ if [ "$*" ]; then
 		-n)
 			shift 1
 			# avoid recording duplicate messages
-			if grep -Fxqe "$*" "$NOTIFY_FILE"; then
+			if grep -Fxqe "$*" "$SNOTIFY_FILE"; then
 				exit 0
 			fi
 
-			printf '%s\n' "$*" >> "$NOTIFY_FILE";
+			printf '%s\n' "$*" >> "$SNOTIFY_FILE";
 			;;
 		-d)
-			new=$(sed '$d' "$NOTIFY_FILE")
-			cat > "$NOTIFY_FILE" <<-EOF
+			new=$(sed '$d' "$SNOTIFY_FILE")
+			cat > "$SNOTIFY_FILE" <<-EOF
 				$new
 			EOF
 			;;
 		-r)
-			rm "$NOTIFY_FILE"
+			rm "$SNOTIFY_FILE"
 			;;
 		-)
 			# avoid recording duplicate messages
 			printf '%s\n' "$STDIN" | while read -r line; do
-				if grep -Fxqe "$line" "$NOTIFY_FILE"; then
+				if grep -Fxqe "$line" "$SNOTIFY_FILE"; then
 					continue
 				fi
-				printf '%s\n' "$line" >> "$NOTIFY_FILE"
+				printf '%s\n' "$line" >> "$SNOTIFY_FILE"
 			done
 			;;
 		*)
@@ -95,7 +94,7 @@ if [ "$*" ]; then
 			;;
 	esac
 else
-	: >> "$NOTIFY_FILE"
-	tail -n 1 "$NOTIFY_FILE"
+	: >> "$SNOTIFY_FILE"
+	tail -n 1 "$SNOTIFY_FILE"
 fi
 

@@ -106,8 +106,6 @@ strip_whitespace() {
 set_trap() { trap 'rm -f "$tmp"' EXIT TERM QUIT HUP INT ABRT; }
 unset_trap() { trap - EXIT TERM QUIT HUP INT ABRT; }
 
-export POSIXLY_CORRECT=1
-
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -120,12 +118,12 @@ if [ "$FILENAME" = '-' ]; then
 	cat - > "$tmp"
 	FILENAME=$tmp
 elif [ "$MCO_HANDLER" ]; then
-	(unset -v POSIXLY_CORRECT; $MCO_HANDLER "$FILENAME") || exit 0
+	$MCO_HANDLER "$FILENAME" || exit 0
 else
 	case "$FILENAME" in
 		*://*)
 			tmp=$(mktemp)
-			(unset -v POSIXLY_CORRECT; ${MCO_DOWNLOADER:-curl -LSsf --} "$FILENAME") > "$tmp"
+			${MCO_DOWNLOADER:-curl -LSsf --} "$FILENAME" > "$tmp"
 			FILENAME=$tmp
 			;;
 		*)
@@ -138,7 +136,7 @@ fi
 MAILCAP=$(IFS=:; cat $MAILCAPS 2> /dev/null || :)
 : "${MAILCAP:?No mailcap files (or all mailcap files are empty)}"
 
-MIMETYPE=$(unset -v POSIXLY_CORRECT; ${MIMER:=xdg-mime query filetype} "$FILENAME")
+MIMETYPE=$(${MIMER:=xdg-mime query filetype} "$FILENAME")
 
 if [ -t 0 ] && [ -t 1 ] && [ -t 2 ]; then
 	TTY=$(tty) || unset -v TTY
@@ -178,7 +176,7 @@ while read -r FILE_MIMETYPE cmd opts; do
 			needsterminal) needsterminal=1 ;;
 			copiousoutput) copiousoutput=1 ;;
 			test=*)
-				if ! (unset -v POSIXLY_CORRECT; eval "${opt#test=}") > /dev/null 2>&1; then
+				if ! eval "${opt#test=}" > /dev/null 2>&1; then
 					skip=1; break;
 				fi
 				;;
@@ -239,7 +237,6 @@ while read -r FILE_MIMETYPE cmd opts; do
 		gsub cmd %s '$FILENAME' %t "$FILE_MIMETYPE"
 
 		IFS=' '
-		unset -v POSIXLY_CORRECT
 		eval "${detach:+${detacher}}" \
 			"${spawn_terminal:+$TERMCMD}" \
 			"$cmd" \

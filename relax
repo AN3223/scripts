@@ -19,8 +19,6 @@ in the same order as below:
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 lavfifilter="anoisesrc=color=brown,afade=type=in:duration=90,tremolo=f=0.1:d=0.1,tremolo=f=0.16:d=0.2"
 
 case "$1" in

@@ -24,11 +24,8 @@ Examples using cron:
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 if [ "$*" ]; then
-	help
-	exit 1
+	help; exit 1;
 fi
 
 exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"

@@ -45,8 +45,6 @@ write_history() {
 	fi
 }
 
-export POSIXLY_CORRECT=1
-
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -175,7 +173,6 @@ esac
 
 write_history "$cmdctx" "$cmd"
 
-unset -v POSIXLY_CORRECT
 if [ "$*" ]; then
 	exec "$@" "${terminal:+$TERMCMD }$cmd"
 else

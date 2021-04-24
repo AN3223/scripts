@@ -15,8 +15,6 @@ this script.
 EOF
 }
 
-export POSIXLY_CORRECT=1
-
 case "$1" in
 	--help|-h) help; exit 0;;
 	*) ;;
@@ -26,19 +24,19 @@ export TMPDIR=/dev/shm/
 trap 'rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM INT ABRT
 
 for file; do
+	case "$file" in -*) file=./"$file" ;; esac
+
 	tmp="$(mktemp)"
 	if [ -f "$file" ] && [ ! -r "$file" ]; then
 		doas cat "$file" > "$tmp"
 	elif [ -r "$file" ]; then
 		cat "$file" > "$tmp"
-	else
-		:
 	fi
 
 	tmpcopy="$(mktemp)"
 	cat "$tmp" > "$tmpcopy"
 
-	(unset -v POSIXLY_CORRECT; ${EDITOR:-vi} "$tmp")
+	${EDITOR:-vi} "$tmp"
 
 	if cmp -s "$tmp" "$tmpcopy"; then
 		echo 'File unchanged, exiting...'
