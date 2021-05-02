@@ -8,7 +8,8 @@ stream_notify
 
 This script requires a line-separated list of stream URLs at ~/.streams
 (or another file specified by the NOTIFYSTREAMS environment variable)
-and youtube-dl.
+and youtube-dl. Each URL may be followed by an optional nickname for the
+stream (e.g. http://website.com/stream123 stream123).
 
 Examples using cron:
 	# 0,30 * * * * means to run every 30 minutes
@@ -29,9 +30,9 @@ if [ "$*" ]; then
 fi
 
 exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"
-while read -r stream; do
-	if youtube-dl -qs "$stream" 2> /dev/null; then
-		printf '%s\n' "$stream is live"
+while read -r url stream; do
+	if youtube-dl -qs "$url" 2> /dev/null; then
+		printf '%s\n' "${stream:-$url} is live"
 	fi
 done
 
