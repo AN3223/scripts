@@ -13,9 +13,12 @@ EOF
 }
 
 mpv_send() {
-	for socket in /tmp/mpvctl*; do
-		[ -S "$socket" ] || continue
-		printf '%s\n' "$1" | socat - "$socket"
+	for socket in /tmp/mpvctl*; do {
+			[ -S "$socket" ]
+			socat - "$socket" <<-EOF
+				$1
+			EOF
+		} || continue
 	done
 }
 
