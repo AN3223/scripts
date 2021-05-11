@@ -27,7 +27,7 @@ EOF
 
 exec mpv --no-config \
 	--mute=yes --sub-auto=no --term-status-msg= --no-osc --no-stop-screensaver \
-	--title='${?media-title:${media-title}}${!media-title:No file} - mpv_img' \
+	--title='${media-title:No file} - mpv_img' \
 	--profile=gpu-hq \
 	--hwdec=auto-safe \
 	--cache=yes \
