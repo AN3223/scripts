@@ -22,7 +22,9 @@ exec 4<<-EOF
 	BS set video-pan-x 0 ; set video-zoom 0 ; set video-pan-y 0
 
 	> repeatable playlist-next
+	. repeatable playlist-next
 	< repeatable playlist-prev
+	, set pause yes ; repeatable playlist-prev
 EOF
 
 exec mpv --no-config \
