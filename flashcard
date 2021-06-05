@@ -4,7 +4,7 @@ help() {
 	cat - >&2 <<EOF
 flashcard - for memorizing things
 
-flashcard file
+flashcard file...
 
 The lines of the file should be formatted like front=back where
 "front" is the information to be presented to you and "back" is the
@@ -14,18 +14,12 @@ you if you were incorrect.
 EOF
 }
 
-case "$1" in
-	--help|-h) help; exit 0;;
-	*) ;;
-esac
+case "$1" in --help|-h) help; exit 0 ;; esac
 
-while :; do
-	words=$(shuf < "$1" | head -n 1)
-	front=${words%%=*}
-	back=${words##*=}
-	echo "$front"
-	printf '> '
-	read -r response
+tty=$(tty)
+cat "$@" | shuf | while IFS='=' read -r front back; do
+	printf '%s\n> ' "$front"
+	read -r response < "$tty"
 	case "$response" in
 		"$back")
 			printf '\n----------------\nCorrect!\n----------------\n\n'
@@ -35,3 +29,4 @@ while :; do
 			;;
 	esac
 done
+
