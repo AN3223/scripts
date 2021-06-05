@@ -1,0 +1,152 @@
+#!/bin/sh -e
+#
+# sm2 [-f] deck
+#
+# The deck is a text file that will be modified by the program.
+#
+# A card is a line of the deck with the form:
+#
+# front<delimiter>back
+#
+# Front is the text shown to the user and back is the text the user
+# intends to remember (e.g. 2+2=4).
+#
+# The delimiter can be a TAB, =, COMMA, or SPACE (checked in that
+# order). sm2 will automatically convert each card into a TAB-delimited
+# format.
+#
+# The -f flag tells sm2 to show all cards, regardless of when they're
+# meant to be shown (useful for when you've run out of cards to view
+# for the day).
+#
+# For more info on this algorithm, see:
+# https://www.supermemo.com/en/archives1990-2015/english/ol/sm2
+#
+
+TAB="$(printf '\t')"
+BAR='----------------'
+EPOCH="$(awk 'BEGIN{srand();print srand()}')"
+
+unset -v force
+while getopts 'f' o; do
+	case "$o" in f) force=1 ;; esac
+done
+shift $((OPTIND-1))
+
+: "${1:?No deck provided, nothing for me to do!}"
+
+deck=$(shuf < "$1" | grep .)
+done=
+
+# --- MADNESS BEGINS --- #
+
+remaining=$(wc -l) <<-EOF
+	$deck
+EOF
+remaining=$((remaining+1))
+
+linedone() {
+	done="${done:+$done
+}$(printf '%s\t%s\t%s\t%s\t%s\n' "$recalls" "$difficulty" "$date" "$front" "$back")"
+}
+
+trap 'done="${done:+$done
+}$(tail -n "$remaining")" <<-EOF
+	$deck
+EOF
+printf '"'%s\n'"' "$done" > "$1"' EXIT TERM QUIT HUP INT ABRT
+
+# --- MADNESS ENDS --- #
+
+# If you want to compare to the algorithm in the link above:
+# recalls = n, difficulty = EF, days = I, grade = q
+while IFS="$TAB" read -r recalls difficulty date front back <&4; do
+	remaining=$((remaining-1))
+
+	# handle missing fields
+	if [ ! "$back" ]; then
+		if [ ! "$difficulty" ]; then
+			[ "$recalls" ] || continue # skip blank cards
+			case "$recalls" in # handle alternative delimiters
+				*=*) difficulty=${recalls#*=}; recalls=${recalls%%=*} ;;
+				*,*) difficulty=${recalls#*,}; recalls=${recalls%%,*} ;;
+				*' '*) difficulty=${recalls#*\ }; recalls=${recalls%%\ *} ;;
+				*) echo "Can't determine delimiter for: $recalls" >&2; exit 1 ;;
+			esac
+
+			# correct the fields, set missing fields to default values
+			front="$recalls"; back="$difficulty";
+			recalls=0; difficulty=2.5; date=0; days=0;
+		fi
+	fi
+
+	if [ "$date" ]; then
+		days=$(bc -l) <<-EOF
+			($date - $EPOCH) / 86400
+		EOF
+	fi
+
+	# skip cards that are too soon to be viewed
+	if [ ! "$force" ] && expr "$date" '>' 0 && expr "$date" '<' "$EPOCH"; then
+		linedone
+		continue
+	fi
+
+	printf '%s\n> ' "$front"
+	read -r response
+
+	case "$response" in
+		"$back") printf "\n$BAR\nCorrect!\n$BAR\n\n" ;;
+		*) printf "\n$BAR\nThe correct answer is %s\n$BAR\n\n" "$back" ;;
+	esac
+
+	grade() {
+		cat - <<-EOF
+			Select a grade:
+			  (0) Incorrect, complete failure to recall
+			  (1) Incorrect, but answer seems familiar
+			  (2) Incorrect, but answer seems easy to remember
+			  (3) Correct, but difficult to recall
+			  (4) Correct, but some hesitation
+			  (5) Correct, perfect recall
+		EOF
+		read -r grade || grade=
+
+		case "$grade" in
+			[3-5]) # correct
+				case "$recalls" in
+					0) days=1 ;; 1) days=6 ;;
+					*)
+						days=$(bc -l) <<-EOF
+							$days*$difficulty
+						EOF
+						;;
+				esac
+
+				if [ "$grade" -ne 4 ]; then
+					difficulty=$(bc -l) <<-EOF
+						$difficulty-0.8+0.28*$grade-0.02*$grade*$grade
+					EOF
+				fi
+
+				if expr "$difficulty" '<' 1.3 > /dev/null; then difficulty=1.3; fi
+				recalls=$((recalls+1))
+				;;
+			[0-2]) # incorrect
+				recalls=0; days=1
+				;;
+			*) return 1 ;;
+		esac
+	}
+
+	while ! grade; do :; done # retries if the user provides bad input
+
+	date=$(bc -l) <<-EOF
+		$days * 86400 + $EPOCH
+	EOF
+
+	linedone
+done 4<<-EOF
+	$deck
+EOF
+
