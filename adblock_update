@@ -1,83 +1,60 @@
 #!/bin/sh -e
-# /etc/cron.weekly/adblock-update
+# This script curls StevenBlack/hosts into /etc/hosts for ad-blocking
+# while optionally ensuring no unauthorized IP addresses are added to
+# the hosts file. Run this script in your root crontab at your own risk.
 #
-# This script expects the following files:
-# /etc/hosts.allowed
-#   a newline-separated list of IP addresses allowed in /etc/hosts
-# /etc/hosts.include
-#   will be appended to the top of /etc/hosts (prior to interpreting
-#   hosts.allowed)
-# /etc/hosts.exclude
-#   a newline-separated list of domains to exclude from /etc/hosts (the
-#   domains may contain globs)
+# These files may be used to affect the behavior of this script:
+# - /etc/hosts.allowed
+#     A newline-separated list of IP addresses allowed in the hosts
+#     file. This whitelist causes the script to exit with an error if an
+#     IP address occurs in the pending hosts file but not in the
+#     hosts.allowed file. This is highly recommended for security,
+#     or else the adblock list could redirect domains to arbitrary IP
+#     addresses.
+# - /etc/hosts.include
+#     This file is appended to /etc/hosts after interpreting
+#     hosts.allowed.
+# - /etc/hosts.exclude
+#     a newline-separated list of case-insensitive extended regular
+#     expressions which will exclude any domains they match from the
+#     hosts file.
 #
 
-# Ensure we don't use an old pending file
-rm -f /etc/hosts.pending
-
-date +'# curled on %c' >> /etc/hosts.pending
-
-if [ -r /etc/hosts.include ]; then
-	cat /etc/hosts.include >> /etc/hosts.pending
-fi
+date +'# curled on %c' > /etc/hosts.pending
 
 curl -LSsf https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
 	>> /etc/hosts.pending
 
 if [ -r /etc/hosts.allowed ]; then
-	allowed=$(cat /etc/hosts.allowed)
-	exec < /etc/hosts.pending
-	while read -r ip _; do
-		unset -v verified
-		case "$ip" in
-			# skip comments and blank lines
-			''|\#*) continue ;;
-			*)
-				for allowed_ip in $allowed; do
-					if [ "$ip" = "$allowed_ip" ]; then
-						verified=1
-						continue
-					fi
-				done
+	sort -u /etc/hosts.allowed -o /etc/hosts.allowed
 
-				if [ "$verified" ]; then
-					continue
-				else
-					echo "$ip not allowed, see /etc/hosts.pending" >&2
-					exit 1
-				fi
-				;;
-		esac
-	done
+	unallowed=$(
+		awk 'NF && $1 !~ /^#/ { print $1 }' /etc/hosts.pending |
+			sort -u | comm -23 - /etc/hosts.allowed
+	)
+
+	if [ "$unallowed" ]; then
+		printf '%s\n' 'Not allowed:' "$unallowed" >&2
+		exit 1
+	fi
 fi
 
+cat /etc/hosts.include >> /etc/hosts.pending || :
+
 if [ -r /etc/hosts.exclude ]; then
-	exclude=$(cat /etc/hosts.exclude)
-	tmp=/etc/hosts.pending.excluding...
-	exec < /etc/hosts.pending
-	while read -r ip domain; do
-		# skip comments and blank lines
-		case "$ip" in
-			''|\#*) printf '%s\n' "$ip $domain" >> "$tmp"; continue ;;
-			*) ;;
-		esac
-
-		unset -v skip
-		for excluded_domain in $exclude; do
-			# shellcheck disable=SC2254 # (allow globbing)
-			case "$domain" in
-				$excluded_domain) skip=1 ;;
-				*) ;;
-			esac
-		done
-
-		if [ "$skip" ]; then
-			continue
-		else
-			printf '%s\n' "$ip $domain" >> "$tmp"
-		fi
-	done
-	mv "$tmp" /etc/hosts.pending
+	# XXX this loop is pretty slow
+	linenos=$(
+		awk 'NF && $1 !~ /^#/ { print NR, $2 }' /etc/hosts.pending |
+			while read -r lineno domain; do
+				{
+					grep -qEif /etc/hosts.exclude <<-EOF
+						$domain
+					EOF
+				} || continue
+				echo "${lineno}d"
+			done
+	)
+	sed -i "$linenos" /etc/hosts.pending
 fi
 
 cat /etc/hosts.pending > /etc/hosts
