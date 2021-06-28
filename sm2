@@ -1,27 +1,31 @@
 #!/bin/sh -e
-#
-# sm2 [-f] deck
-#
-# The deck is a text file that will be modified by the program.
-#
-# A card is a line of the deck with the form:
-#
-# front<delimiter>back
-#
-# Front is the text shown to the user and back is the text the user
-# intends to remember (e.g. 2+2=4).
-#
-# The delimiter can be a TAB, =, COMMA, or SPACE (checked in that
-# order). sm2 will automatically convert each card into a TAB-delimited
-# format.
-#
-# The -f flag tells sm2 to show all cards, regardless of when they're
-# meant to be shown (useful for when you've run out of cards to view
-# for the day).
-#
-# For more info on this algorithm, see:
-# https://www.supermemo.com/en/archives1990-2015/english/ol/sm2
-#
+
+help() {
+cat - >&2 <<EOF
+sm2 [-f] deck
+
+The deck is a text file that will be modified by the program.
+
+A card is a line of the deck with the form:
+
+front<delimiter>back
+
+Front is the text shown to the user and back is the text the user
+intends to remember (e.g. 2+2=4).
+
+The delimiter can be a TAB, =, COMMA, or SPACE (checked in that
+order). sm2 will automatically convert each card into a TAB-delimited
+format.
+
+The -f flag tells sm2 to show all cards, regardless of when they're
+meant to be shown (useful for when you've run out of cards to view
+for the day).
+
+For more info on this algorithm, see:
+https://www.supermemo.com/en/archives1990-2015/english/ol/sm2
+EOF
+}
+
 
 TAB="$(printf '\t')"
 BAR='----------------'
@@ -29,7 +33,11 @@ EPOCH="$(awk 'BEGIN{srand();print srand()}')"
 
 unset -v force
 while getopts 'f' o; do
-	case "$o" in f) force=1 ;; esac
+	case "$o" in
+		f) force=1 ;;
+		h) help; exit 0 ;;
+		*) help; exit 1 ;;
+	esac
 done
 shift $((OPTIND-1))
 
