@@ -1,5 +1,7 @@
-You can clone this repository as a hidden service if you so desire:
+These are my scripts. I aim to make them simple, portable, and useful. Most are
+written in POSIX shell, with occasional use of sed -i, mktemp, and other
+"portable enough" commands.
+
+You might be able to clone this repo over tor (server is often down, currently borked):
 torsocks git clone --depth 1 git://r7imjx7zhchprlklefxtunh2yfxt545yed64gwvuqlln4kmeswct3vad.onion/scripts
 
-This is my collection of scripts that I've made for various purposes.
-Issues/PRs welcome.
