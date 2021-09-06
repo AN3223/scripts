@@ -1,0 +1,41 @@
+#!/bin/sh -e
+
+exec 4<<-EOF
+	# Just pan with hjkl
+	h  add video-pan-x  0.02
+	j  add video-pan-y -0.02
+	k  add video-pan-y  0.02
+	l  add video-pan-x -0.02
+
+	# Zoom and pan with arrow keys
+	left  add video-pan-x  0.02
+	up    add video-zoom   0.05
+	down  add video-zoom  -0.05
+	right add video-pan-x -0.02
+
+	# Same as arrow keys for HJKL
+	H  add video-pan-x  0.02
+	J  add video-zoom  -0.05
+	K  add video-zoom   0.05
+	L  add video-pan-x -0.02
+
+	BS set video-pan-x 0 ; set video-zoom 0 ; set video-pan-y 0
+
+	> repeatable playlist-next
+	. repeatable playlist-next
+	< repeatable playlist-prev
+	, set pause yes ; repeatable playlist-prev
+EOF
+
+exec mpv --no-config \
+	--mute=yes --sub-auto=no --term-status-msg= --no-osc --no-stop-screensaver \
+	--title='${media-title:No file} - mpv_img' \
+	--profile=gpu-hq \
+	--hwdec=auto-safe \
+	--cache=yes \
+	--image-display-duration=inf \
+	--no-keepaspect-window \
+	--input-conf=fd://4 \
+	${WAYLAND_DISPLAY:+--gpu-context=waylandvk} \
+	"$@"
+
