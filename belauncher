@@ -1,0 +1,67 @@
+#!/bin/sh -e
+#
+# bemenu-based launcher script
+#
+# belauncher [utility [args...]]
+#
+# The command selected will be passed as an argument to the utility
+# provided on belauncher's command line, e.g., "belauncher i3-msg exec"
+# to run under i3. If no utility is provided then the selected command
+# will be ran directly by this script.
+#
+# The TERMCMD environment variable must be set in order to spawn a
+# terminal for commands, e.g., "xterm -e" for xterm.
+#
+
+: "${TERMCMD:?'$TERMCMD must be set (i.e. xterm -e)'}"
+
+# ensure $BELAUNCHER_HISTORY is set and the file exists
+: >> "${BELAUNCHER_HISTORY:="${HOME:?}/.belauncher"}"
+
+cmd=$(sed '1!G;h;$!d' "$BELAUNCHER_HISTORY" | bemenu -i -p '' -l 10)
+
+# XXX selecting an entry, Shift+Tab to copy it into the filter, and then
+# C-A + Space to prepend it with a space should make it anonymous, but
+# bemenu seems to strip the space in this case?
+case "$cmd" in
+	'') exit 0 ;;
+	' '*) anonymous=1; cmd=${cmd#' '};;
+	*) unset -v anonymous ;;
+esac
+
+case "$cmd" in
+	[12]' '*) cmdctx=${cmd%%' '*}; cmd=${cmd#[12]' '} ;;
+	*) unset -v cmdctx ;;
+esac
+
+if [ ! "$cmdctx" ]; then
+	cmdctx=$(
+		printf '%s\n' 'background' 'terminal' |
+			bemenu -l 2 -p '' -P "Run '$cmd' in the"
+	)
+	case "$cmdctx" in
+		background) cmdctx=2 ;;
+		terminal) cmdctx=1 ;;
+		*) exit 1 ;;
+	esac
+fi
+
+case "$cmdctx" in
+	1) terminal=1 ;;
+	*) unset -v terminal; cmdctx=2 ;;
+esac
+
+if [ ! "$anonymous" ]; then
+		deduped=$(grep -Fxve "$cmdctx $cmd" -e "$cmd" < "$BELAUNCHER_HISTORY") || :
+		cat > "$BELAUNCHER_HISTORY" <<-EOF
+			$deduped
+			$cmdctx $cmd
+		EOF
+fi
+
+if [ "$*" ]; then
+	exec "$@" "${terminal:+$TERMCMD }$cmd"
+else
+	eval exec "${terminal:+$TERMCMD }$cmd"
+fi
+
