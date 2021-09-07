@@ -103,7 +103,7 @@ strip_whitespace() {
 	unset -v var _var
 }
 
-set_trap() { trap 'rm -f "$tmp"' EXIT TERM QUIT HUP INT ABRT; }
+set_trap() { trap 'unset_trap; rm -f "$tmp"' EXIT TERM QUIT HUP INT ABRT; }
 unset_trap() { trap - EXIT TERM QUIT HUP INT ABRT; }
 
 case "$1" in

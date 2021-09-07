@@ -58,7 +58,7 @@ linedone() {
 }$(printf '%s\t%s\t%s\t%s\t%s\n' "$recalls" "$difficulty" "$date" "$front" "$back")"
 }
 
-trap 'done="${done:+$done
+trap 'trap - EXIT TERM QUIT HUP INT ABRT; done="${done:+$done
 }$(tail -n "$remaining")" <<-EOF
 	$deck
 EOF

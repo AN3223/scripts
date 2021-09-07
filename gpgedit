@@ -4,7 +4,7 @@
 # wrong.
 
 export TMPDIR=/dev/shm/
-trap 'rm -rf "$tmpd"' EXIT TERM QUIT HUP INT ABRT
+trap 'trap - EXIT TERM QUIT HUP INT ABRT; rm -rf "$tmpd"' EXIT TERM QUIT HUP INT ABRT
 tmpd=$(mktemp -d)
 
 gpg() { gpg2 --no-tty --batch --yes "$@"; }

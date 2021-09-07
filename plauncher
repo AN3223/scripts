@@ -69,7 +69,7 @@ NL="
 # ensure $PLAUNCHER_HISTORY is set and the file exists
 : >> "${PLAUNCHER_HISTORY:="${HOME:?}/.plauncher"}"
 
-trap 'cleanterm' EXIT QUIT TERM INT ABRT
+trap 'trap - EXIT QUIT TERM INT ABRT; cleanterm' EXIT QUIT TERM INT ABRT
 stty -icanon -echo -nl
 unset -v cmd cursor list_length appended
 while :; do

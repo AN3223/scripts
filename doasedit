@@ -21,7 +21,7 @@ case "$1" in
 esac
 
 export TMPDIR=/dev/shm/
-trap 'rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM INT ABRT
+trap 'trap - EXIT HUP QUIT TERM INT ABRT; rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM INT ABRT
 
 for file; do
 	case "$file" in -*) file=./"$file" ;; esac
