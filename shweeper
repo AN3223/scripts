@@ -1,0 +1,182 @@
+#!/bin/sh -e
+# XXX This script is very slow as a result of making many calls to awk.
+# Could the whole script be converted to awk?
+
+help() {
+	cat - >&2 <<EOF
+shweeper [gridsize]
+
+Commands are taken over standard input. To reveal a square, type the
+number of the row followed by the letter of the column or vice versa
+(no spaces). For example:
+
+a1
+1a
+
+To mark a square as a mine, either prepend or append an exclamation
+mark to your command. For example:
+
+a1!
+1a!
+!a1
+!1a
+
+Squares do not need to be marked as mines in order to win.
+
+The default gridsize is 9 and the maximum is 26.
+
+The program will exit with a status of 0 for a win or 2 for a loss.
+EOF
+}
+
+getcell() {
+	awk -v x="$1" -v y="$2" 'NR == y { print $x }' <<-EOF
+		$3
+	EOF
+}
+
+setcell() {
+	awk -v x="$1" -v y="$2" -v c="$3" '
+		NR == y { $x = c }
+		{ print $0 }' <<-EOF
+		$4
+	EOF
+}
+
+# using -a instead of && actually saves seconds(!) in update_grid
+in_bounds() {
+	[ "$1" -gt 0 -a "$1" -le "$gridsize" \
+		-a "$2" -gt 0 -a "$2" -le "$gridsize" ]
+}
+
+# XXX very hot spot
+update_grid() {
+	in_bounds "$1" "$2" || return 0
+
+	known_cell=$(getcell "$1" "$2" "$known_grid")
+	case "$known_cell" in .)
+		hidden_cell=$(getcell "$1" "$2" "$hidden_grid")
+		known_grid=$(setcell "$1" "$2" "$hidden_cell" "$known_grid")
+
+		case "$hidden_cell" in
+			X) gameover=1 ;;
+			0)
+				update_grid "$(($1-1))" "$(($2-1))"
+				update_grid "$(($1-1))" "$(($2  ))"
+				update_grid "$(($1-1))" "$(($2+1))"
+				update_grid "$(($1+1))" "$(($2-1))"
+				update_grid "$(($1+1))" "$(($2  ))"
+				update_grid "$(($1+1))" "$(($2+1))"
+				update_grid "$(($1  ))" "$(($2+1))"
+				update_grid "$(($1  ))" "$(($2-1))"
+				;;
+		esac
+		;;
+	esac
+}
+
+case "$1" in
+	-h|--help) help; exit 0 ;;
+	[0-9]|[0-9][0-9]) gridsize="$1" ;;
+	'') gridsize=9 ;;
+	*) help; exit 1 ;;
+esac
+
+# generate blank grid
+known_grid=$(
+	y=0
+	while [ "$y" -lt "$gridsize" ]; do
+		x=0
+		while [ "$x" -lt "$gridsize" ]; do
+			printf '. '
+			x=$((x+1))
+		done
+		printf '\n'
+		y=$((y+1))
+	done
+)
+
+hidden_grid=$(awk -v gs="$gridsize" '
+		BEGIN {
+			srand()
+			SUBSEP = ","
+
+			# place mines
+			for (y = 1; y <= gs; y++)
+				for (x = 1; x <= gs; x++)
+					grid[x,y] = rand() < 0.1234567
+		}
+
+		END {
+			# build up numbers around the mines, mark mines with an X
+			for (y = 1; y <= gs; y++)
+				for (x = 1; x <= gs; x++)
+					finalgrid[x,y] = grid[x,y] == 1 ? "X" : grid[x-1,y-1]+grid[x,y-1]+grid[x+1,y-1]+grid[x-1,y]+grid[x+1,y]+grid[x-1,y+1]+grid[x,y+1]+grid[x+1,y+1]
+
+			# print result
+			for (y = 1; y <= gs; y++) {
+				for (x = 1; x <= gs; x++)
+					printf("%s ", finalgrid[x,y])
+				printf "\n"
+			}
+		}
+	' /dev/null
+)
+
+bombs=$(tr -d ' 0-8\n' | wc -c) <<-EOF
+	$hidden_grid
+EOF
+
+alphabet_multiline=$(printf '%s\n' A B C D E F G H I \
+	J K L M N O P Q R S T U V W X Y Z | head -n "$gridsize")
+alphabet=$(tr -d '\n') <<-EOF
+	$alphabet_multiline
+EOF
+
+unset -v gameover
+while :; do
+	unknown_cells=$(tr -d ' 0-8\n' | wc -c) <<-EOF
+		$known_grid
+	EOF
+
+	echo "   $alphabet"
+	awk '{ gsub(" ", "", $0); printf("%02d|%s|%02d\n", NR, $0, NR) }' <<-EOF
+		$known_grid
+	EOF
+	echo "   $alphabet"
+
+	if [ "$unknown_cells" -eq "$bombs" ]; then
+		echo 'You win!' >&2; exit 0;
+	elif [ "$gameover" ]; then
+		echo 'You lose!' >&2; exit 2;
+	fi
+
+	read -r coords
+	case "$coords" in
+		!*) mark=1; coords=${coords#!} ;;
+		*!) mark=1; coords=${coords%!} ;;
+		*) unset -v mark ;;
+	esac
+
+	case "$coords" in
+		[A-Za-z]*) x=${coords%%[0-9]*}; y=${coords##*[A-Za-z]} ;;
+		[0-9]*) x=${coords##*[0-9]}; y=${coords%%[A-Za-z]*} ;;
+		*) continue ;; # retry in case of invalid input
+	esac
+
+	x=$(awk -v x="$x" '$0 == toupper(x) { print NR }') <<-EOF
+		$alphabet_multiline
+	EOF
+
+	in_bounds "$x" "$y" || continue
+
+	if [ "$mark" ]; then
+		case "$(getcell "$x" "$y" "$known_grid")" in
+			.) known_grid=$(setcell "$x" "$y" '!' "$known_grid") ;;
+			!) known_grid=$(setcell "$x" "$y" '.' "$known_grid") ;;
+		esac
+	else
+		update_grid "$x" "$y"
+	fi
+done
+
