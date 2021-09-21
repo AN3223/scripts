@@ -34,9 +34,8 @@ MIMER
 	The command used to get the mimetype of a file, defaults to:
 		xdg-mime query filetype
 
-MCO_NEEDSTERMINAL
-	If set, mailcap_open will always act like needsterminal is set.
-	Useful for preventing mailcap_open from opening the file in the
+MCO_NODETACH
+	If set, this will prevent mailcap_open from opening the file in the
 	background.
 
 MCO_DOWNLOADER
@@ -199,10 +198,6 @@ while read -r FILE_MIMETYPE cmd opts; do
 		continue
 	fi
 
-	if [ "$MCO_NEEDSTERMINAL" ]; then
-		needsterminal=1
-	fi
-
 	if [ "$needsterminal" ] && [ ! "$TTY" ]; then
 		spawn_terminal=1
 		detach=1
@@ -211,6 +206,10 @@ while read -r FILE_MIMETYPE cmd opts; do
 		detach=1
 	else
 		unset -v spawn_terminal detach
+	fi
+
+	if [ "$MCO_NODETACH" ]; then
+		unset -v detach
 	fi
 
 	# fallback to nohup, since setsid isn't POSIX
