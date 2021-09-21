@@ -1,24 +1,28 @@
 #!/bin/sh -e
 #
-# bemenu-based launcher script
+# launcher script for use with a menu program (e.g., dmenu, bemenu,
+# fzf, etc.)
 #
-# belauncher [utility [args...]]
+# launcher [utility [args...]]
 #
 # The command selected will be passed as an argument to the utility
-# provided on belauncher's command line, e.g., "belauncher i3-msg exec"
+# provided on this script's command line, e.g., "launcher i3-msg exec"
 # to run under i3. If no utility is provided then the selected command
 # will be ran directly by this script.
 #
 # The TERMCMD environment variable must be set in order to spawn a
 # terminal for commands, e.g., "xterm -e" for xterm.
 #
+# The MENU environment variable determines the menu command to be used,
+# defaults to "bemenu -i -l 10"
+#
 
 : "${TERMCMD:?'$TERMCMD must be set (i.e. xterm -e)'}"
 
-# ensure $BELAUNCHER_HISTORY is set and the file exists
-: >> "${BELAUNCHER_HISTORY:="${HOME:?}/.belauncher"}"
+# ensure $LAUNCHER_HISTORY is set and the file exists
+: >> "${LAUNCHER_HISTORY:="${HOME:?}/.launcher"}"
 
-cmd=$(sed '1!G;h;$!d' "$BELAUNCHER_HISTORY" | bemenu -i -p '' -l 10)
+cmd=$(sed '1!G;h;$!d' "$LAUNCHER_HISTORY" | ${MENU:-bemenu -i -l 10})
 
 # XXX selecting an entry, Shift+Tab to copy it into the filter, and then
 # C-A + Space to prepend it with a space should make it anonymous, but
@@ -37,7 +41,7 @@ esac
 if [ ! "$cmdctx" ]; then
 	cmdctx=$(
 		printf '%s\n' 'background' 'terminal' |
-			bemenu -l 2 -p '' -P "Run '$cmd' in the"
+			${MENU:-bemenu -l 2 -p '' -P "Run '$cmd' in the"}
 	)
 	case "$cmdctx" in
 		background) cmdctx=2 ;;
@@ -52,8 +56,8 @@ case "$cmdctx" in
 esac
 
 if [ ! "$anonymous" ]; then
-		deduped=$(grep -Fxve "$cmdctx $cmd" -e "$cmd" < "$BELAUNCHER_HISTORY") || :
-		cat > "$BELAUNCHER_HISTORY" <<-EOF
+		deduped=$(grep -Fxve "$cmdctx $cmd" -e "$cmd" < "$LAUNCHER_HISTORY") || :
+		cat > "$LAUNCHER_HISTORY" <<-EOF
 			$deduped
 			$cmdctx $cmd
 		EOF
