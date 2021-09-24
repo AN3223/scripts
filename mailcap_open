@@ -1,5 +1,6 @@
 #!/bin/sh -ef
 # shellcheck disable=SC2209,SC2086
+# XXX this script and its documentation could probably use a refactor
 
 help() {
 	cat - >&2 <<EOF
@@ -17,6 +18,10 @@ actually substituted for a shell variable, not a filename. This is
 done on purpose to avoid issues with special characters.
 So don't single quote %s! It will cause errors! You have been warned!
 Also don't forget to set the TERMCMD environment variable, see below.
+
+The x-url field must be set on a mailcap entry in order for it to be
+invoked with a URL (unless MCO_IGNOREURLS is set). The command line
+must contain a %s in order to work with URLs.
 
 The following environment variables are used:
 
@@ -66,6 +71,12 @@ MCO_HANDLER
 	Ideally a custom handler should always throw an error in the case of
 	a URL.
 
+MCO_IGNOREURLS
+	Don't do any special handling for URLs. This will likely result in
+	errors if a URL is passed to a command that doesn't support URLs, but
+	this will prevent the error of file paths match *://* being treated as
+	URLs. This will also skip MCO_DOWNLOADER logic.
+
 PLEASE_USE_NOHUP
 	mailcap_open will usually use setsid to detach a process, but you can
 	set this variable to use nohup instead.
@@ -114,6 +125,12 @@ case "$1" in
 esac
 
 FILENAME=${1:-'-'}
+
+case "$FILENAME" in
+	*://*) [ "$MCO_IGNOREURLS" ] || url=1 ;;
+	*) unset -v url ;;
+esac
+
 unset -v tmp; set_trap;
 if [ "$FILENAME" = '-' ]; then
 	tmp=$(mktemp)
@@ -122,15 +139,11 @@ if [ "$FILENAME" = '-' ]; then
 elif [ "$MCO_HANDLER" ]; then
 	$MCO_HANDLER "$FILENAME" || exit 0
 else
-	case "$FILENAME" in
-		*://*)
-			tmp=$(mktemp)
-			${MCO_DOWNLOADER:-curl -LSsf --} "$FILENAME" > "$tmp"
-			FILENAME=$tmp
-			;;
-		*)
-			;;
-	esac
+	if [ "$url" ]; then
+		tmp=$(mktemp)
+		${MCO_DOWNLOADER:-curl -LSsf --} "$FILENAME" > "$tmp"
+		FILENAME=$tmp
+	fi
 fi
 
 : "${MAILCAPS:=${HOME:?}/.mailcap:/etc/mailcap:/usr/etc/mailcap:/usr/local/etc/mailcap}"
@@ -155,7 +168,7 @@ exec <<-EOF
 	$MAILCAP
 EOF
 while read -r FILE_MIMETYPE cmd opts; do
-	unset -v copiousoutput needsterminal skip
+	unset -v copiousoutput needsterminal skip x_url
 
 	# Skip comments and empty lines
 	case "$FILE_MIMETYPE" in
@@ -190,6 +203,7 @@ while read -r FILE_MIMETYPE cmd opts; do
 			composetyped=*) ;;
 			print=*) ;;
 			textualnewlines=*) ;;
+			x-url) x_url=1 ;;
 			x-*) ;;
 			*)
 				echo "Warning, unrecognized option: $opt" >&2
@@ -198,6 +212,10 @@ while read -r FILE_MIMETYPE cmd opts; do
 	done
 
 	if [ "$skip" ]; then
+		continue
+	fi
+
+	if [ "$url" ] && [ ! "$x_url" ]; then
 		continue
 	fi
 
@@ -231,9 +249,9 @@ while read -r FILE_MIMETYPE cmd opts; do
 			exec < "$TTY"
 		fi
 
-		# Put file contents into stdin if %s is missing
+		# Write file contents into stdin if %s is missing, but not for URLs
 		case "$cmd" in *%s*) ;; *)
-			exec < "$FILENAME" ;;
+			[ "$url" ] || exec < "$FILENAME" ;;
 		esac
 
 		gsub cmd %s '$FILENAME' %t "$FILE_MIMETYPE"
