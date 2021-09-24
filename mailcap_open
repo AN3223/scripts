@@ -34,6 +34,9 @@ MIMER
 	The command used to get the mimetype of a file, defaults to:
 		xdg-mime query filetype
 
+MIMETYPE
+	Sets the mimetype of the file, skips calling MIMER.
+
 MCO_NODETACH
 	If set, this will prevent mailcap_open from opening the file in the
 	background.
@@ -135,7 +138,7 @@ fi
 MAILCAP=$(IFS=:; cat $MAILCAPS 2> /dev/null || :)
 : "${MAILCAP:?No mailcap files (or all mailcap files are empty)}"
 
-MIMETYPE=$(${MIMER:=xdg-mime query filetype} "$FILENAME")
+: "${MIMETYPE:=$(${MIMER:=xdg-mime query filetype} "$FILENAME")}"
 
 if [ -t 0 ] && [ -t 1 ] && [ -t 2 ]; then
 	TTY=$(tty) || unset -v TTY
