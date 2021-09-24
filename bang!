@@ -87,7 +87,7 @@ case "$bang" in
 !twitch) link="https://www.twitch.tv/$*" ;;
 !twitchg) link="https://www.twitch.tv/directory/game/$*" ;;
 !tw|!twitter) link="https://nitter.net/search?q=$*" ;;
-!v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs%09$*" ;;
+!v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs?$*" ;;
 !w) link="https://wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !w??) link="https://${bang#!w}.wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !wa|!wolf|!wolfram) link="https://www.wolframalpha.com/input/?i=$*" ;;
