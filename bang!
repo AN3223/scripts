@@ -2,28 +2,40 @@
 
 help() {
 	cat - >&2 <<EOF
-This script emulates DuckDuckGo's "bangs" feature, but with some added
-benefits:
-	1. The links are generated locally, which saves time, especially on
-	slow connections.
-	2. This script is fully configurable and extensible. You can add new
-	bangs through the ~/.bangs file, described below. You can also
-	define a default search engine for this script through the
-	DEFAULT_BANG variable described below.
-	3. This script will try to generate links for the non-JS versions of
-	websites so this script can be useful for web browsers without
-	JavaScript.
-	4. Links can be generated for non-HTTP content, such as Gopher
+This script emulates DuckDuckGo's "bangs" feature, but better:
+
+1. Links are generated locally, which saves time, esp. on slow connections.
+
+2. Fully configurable/extensible. New bangs can be defined in ~/.bangs,
+described below. The default bang can also be changed with the DEFAULT_BANG
+environment variable.
+
+3. The generated links point to non-JS versions/mirrors of sites when available.
+
+4. Links can be generated for non-HTTP resources, such as Gopher.
+
+Examples:
+
+bang! what is a cat?
+bang! !w cat
+bang! !wes gato  # Spanish-Wikipedia page for cat
+bang! !yt cat videos
 
 Environment variables used by this script:
 
 BROWSER: (default: xdg-open)
-	The browser you want to open the link in. You might want to set
-	this to your preferred web browser. This can be any	command (i.e.
-	echo if you just want to print the link).
+	The command that will be used to open the link. You may want to set
+	this to your preferred web browser. Set to "echo" to just print the
+	link to standard output.
 
 DEFAULT_BANG: (default: !duckduckgo)
 	The default bang if no bang is provided.
+
+NITTER_MIRRORS:
+	Nitter mirrors used by !tw and !twitter, URLs must end with /
+
+INVIDIOUS_MIRRORS:
+	Invidious mirrors used by !yt and !youtube, URLs must end with /
 
 The ~/.bangs (or \$BANGS) file:
 	This file allows you to define your own bangs which take priority
@@ -39,6 +51,7 @@ EOF
 
 case "$1" in
 	-h|--help) help; exit 0 ;;
+	'') exit 0 ;;
 	!*) bang="$1"; shift 1 ;;
 	*) bang="${DEFAULT_BANG:-!duckduckgo}" ;;
 esac
@@ -47,6 +60,52 @@ if [ -r "${BANGS:=${HOME:?}/.bangs}" ]; then
 	. "$BANGS" "$@"
 fi
 
+# each URL must end with /
+: ${NITTER_MIRRORS='https://bird.trom.tf/
+https://birdsite.xanny.family/
+https://n.0x0.st/
+https://n.hyperborea.cloud/
+https://nitter.1d4.us/
+https://nitter.alefvanoon.xyz/
+https://nitter.autarkic.org/
+https://nitter.ca/
+https://nitter.domain.glass/
+https://nitter.eu/
+https://nitter.fdn.fr/
+https://nitter.grimneko.de/
+https://nitter.ir/
+https://nitter.it/
+https://nitter.koyu.space/
+https://nitter.mailstation.de/
+https://nitter.moomoo.me/
+https://nitter.namazso.eu/
+https://nitter.net/
+https://nitter.nixnet.services/
+https://nitter.pussthecat.org/
+https://nitter.unixfox.eu/
+https://nitter.vxempire.xyz/
+https://twitter.076.ne.jp/
+https://twitter.censors.us/'}
+
+# each URL must end with /
+: ${INVIDIOUS_MIRRORS='https://inv.riverside.rocks/
+https://invidio.xamh.de/
+https://invidious.hub.ne.kr/
+https://invidious.namazso.eu/
+https://invidious.snopyta.org/
+https://vid.mint.lgbt/
+https://vid.puffyan.us/
+https://yewtu.be/
+https://yt.artemislena.eu/'}
+
+#
+# these are sorted alphabetically, please try to maintain this
+#
+# in Vim you can sort this by putting your cursor on the first bang,
+# C-v, and then putting cursor on the last bang, and then :sort
+#
+# each bang is restricted to one line so it's easier to sort
+#
 if [ ! "$link" ]; then
 case "$bang" in
 !archaur|!aur) link="https://aur.archlinux.org/packages.php?K=$*" ;;
@@ -57,6 +116,8 @@ case "$bang" in
 !arch|!archwiki) link="https://wiki.archlinux.org/index.php/$*" ;;
 !a|!amazon) link="https://www.amazon.com/s/?field-keywords=$*" ;;
 !ddg|!duckduckgo) link="https://duckduckgo.com/lite?q=$*" ;;
+!deb) link="https://packages.debian.org/search?keywords=$*" ;;
+!debian) link="https://search.debian.org/cgi-bin/omega?DB=en&P=$*" ;;
 !e|!ebay) link="https://www.ebay.com/sch/i.html?_nkw=$*" ;;
 !gb) link="https://www.google.com/search?q=$*&tbm=bks" ;;
 !gentoopkg|!gentoopackage) link="https://packages.gentoo.org/packages/search?q=$*" ;;
@@ -74,8 +135,12 @@ case "$bang" in
 !hn|!hackernews) link="https://hn.algolia.com/?q=$*" ;;
 !h|!hoogle) link="https://hoogle.haskell.org/?hoogle=$*" ;;
 !imdb) link="https://www.imdb.com/find?q=$*" ;;
+!lt|!limetorrents) IFS=-; link="https://www.limetorrents.pro/search/all/$*/" ;;
+!lw|!legwork) link="http://legwork.i2p/yacysearch.html?query=$*" ;;
+!man|!debman) link="https://manpages.debian.org/jump?q=$*" ;;
 !nethack) link="https://nethackwiki.com/wiki/?search=$*" ;;
 !phoronix) link="https://www.phoronix.com/scan.php?page=search&q=$*" ;;
+!pm|!postman) link="http://tracker2.postman.i2p/?search=$*" ;;
 !p|!pinterest) link="https://www.pinterest.com/search/pins/?q=$*" ;;
 !r|!reddit) link="https://old.reddit.com/search?q=$*" ;;
 !so|!stackoverflow) link="https://stackoverflow.com/search?q=$*" ;;
@@ -86,14 +151,14 @@ case "$bang" in
 !tpb|!thepiratebay) link="https://thepiratebay.org/search.php?q=$*" ;;
 !twitch) link="https://www.twitch.tv/$*" ;;
 !twitchg) link="https://www.twitch.tv/directory/game/$*" ;;
-!tw|!twitter) link="https://nitter.net/search?q=$*" ;;
+!tw|!twitter) link="$(printf '%s\n' "$NITTER_MIRRORS" | shuf | head -n 1)search?q=$*" ;;
 !v|!veronica) link="gopher://gopher.floodgap.com:70/7/v2/vs?%09$*" ;;
 !w) link="https://wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !w??) link="https://${bang#!w}.wikipedia.org/w/index.php?search=$*&ns0=1" ;;
 !wa|!wolf|!wolfram) link="https://www.wolframalpha.com/input/?i=$*" ;;
 !wt) link="https://wiktionary.org/wiki/$*" ;;
 !wt??) link="https://${bang#!wt}.wiktionary.org/wiki/$*" ;;
-!yt|!youtube) link="https://yewtu.be/search?q=$*" ;;
+!yt|!youtube) link="$(printf '%s\n' "$INVIDIOUS_MIRRORS" | shuf | head -n 1)search?q=$*" ;;
 !zillow) link="https://www.zillow.com/homes/$*_rb" ;;
 *)
 	printf '%s\n' "unknown bang $bang" >&2
