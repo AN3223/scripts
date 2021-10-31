@@ -1,0 +1,33 @@
+#!/bin/sh -e
+# This script forces an application to use the i2p SOCKS proxy at port
+# 4447, and optionally allows the HTTP proxy at port 4444 to be used
+# instead. This is because the alternatives have drawbacks:
+#
+# Only using the HTTP proxy means you can't access non-HTTP resources,
+# e.g., gopher.
+#
+# Only using the SOCKS proxy means your browser will use the default
+# user agent, which is not great for anonymity and some eepsites (e.g.,
+# zzz.i2p and stats.i2p) will detect you as an inproxy and block you.
+#
+# This script should give you the best of both worlds, HTTP proxy for
+# HTTP, SOCKS for everything else. This is assuming your application
+# respects the http_proxy environment variable (most browsers do).
+
+export http_proxy='http://127.0.0.1:4444'
+
+# gotta use a tempfile since proxychains may read the file multiple
+# times, so a fd would cause errors
+trap 'trap - EXIT HUP QUIT TERM INT ABRT; rm -f "$tmp"' EXIT HUP QUIT TERM INT ABRT
+tmp=$(mktemp)
+cat > "$tmp" <<-EOF
+	strict_chain
+	quiet_mode
+	proxy_dns
+	localnet 127.0.0.0:4444/255.0.0.0
+	[ProxyList]
+	socks5 127.0.0.1 4447
+EOF
+
+exec proxychains -f "$tmp" "$@"
+
