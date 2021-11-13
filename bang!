@@ -108,12 +108,14 @@ https://yt.artemislena.eu/'}
 #
 if [ ! "$link" ]; then
 case "$bang" in
+!alpine) link="https://pkgs.alpinelinux.org/packages?name=$*" ;;
+!alpinewiki) link="https://wiki.alpinelinux.org/w/index.php?search=$*" ;;
 !archaur|!aur) link="https://aur.archlinux.org/packages.php?K=$*" ;;
 !archive) link="https://archive.org/search.php?query=$*" ;;
 !archived|!wayback|!wb|!wbm) link="https://web.archive.org/web/*/$*" ;;
 !archlinux) link="https://bbs.archlinux.org/search.php?keywords=$*" ;;
 !archpkg|!archpackages) link="https://www.archlinux.org/packages/?q=$*" ;;
-!arch|!archwiki) link="https://wiki.archlinux.org/index.php/$*" ;;
+!aw|!arch|!archwiki) link="https://wiki.archlinux.org/index.php/$*" ;;
 !a|!amazon) link="https://www.amazon.com/s/?field-keywords=$*" ;;
 !ddg|!duckduckgo) link="https://duckduckgo.com/lite?q=$*" ;;
 !deb) link="https://packages.debian.org/search?keywords=$*" ;;
