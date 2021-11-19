@@ -49,7 +49,7 @@ case "$backend" in
 		exec ffplay -nodisp -f lavfi -i "$lavfifilter"
 		;;
 	mpv)
-		exec mpv --no-resume-playback av://lavfi:"$lavfifilter"
+		exec mpv --no-config av://lavfi:"$lavfifilter"
 		;;
 	ffmpeg)
 		exec ffmpeg -f lavfi -i "$lavfifilter" -f alsa default
