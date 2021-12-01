@@ -53,10 +53,10 @@ if command -v flock > /dev/null 2>&1; then
 		sleep 0.1
 	done
 else
-	trap 'trap - EXIT QUIT HUP INT TERM ABRT; rmdir "$LOCK"' EXIT QUIT HUP INT TERM ABRT
 	while ! mkdir "$LOCK"; do
 		sleep 0.1
 	done
+	trap 'trap - EXIT QUIT HUP INT TERM ABRT; rmdir "$LOCK"' EXIT QUIT HUP INT TERM ABRT
 fi
 
 if [ "$*" ]; then
