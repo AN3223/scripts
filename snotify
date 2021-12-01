@@ -53,8 +53,8 @@ if command -v flock > /dev/null 2>&1; then
 		sleep 0.1
 	done
 else
-	trap 'trap - EXIT QUIT HUP INT TERM ABRT; rm -f "$LOCK"' EXIT QUIT HUP INT TERM ABRT
-	while ! (set -C; : > "$LOCK"); do
+	trap 'trap - EXIT QUIT HUP INT TERM ABRT; rmdir "$LOCK"' EXIT QUIT HUP INT TERM ABRT
+	while ! mkdir "$LOCK"; do
 		sleep 0.1
 	done
 fi
@@ -71,7 +71,7 @@ if [ "$*" ]; then
 			printf '%s\n' "$*" >> "$SNOTIFY_FILE";
 			;;
 		-d)
-			new=$(sed '$d' "$SNOTIFY_FILE")
+			new=$(head -n -1 "$SNOTIFY_FILE")
 			cat > "$SNOTIFY_FILE" <<-EOF
 				$new
 			EOF
