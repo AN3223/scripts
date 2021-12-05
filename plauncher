@@ -45,10 +45,7 @@ write_history() {
 	fi
 }
 
-case "$1" in
-	--help|-h) help; exit 0;;
-	*) ;;
-esac
+case "$1" in --help|-h) help; exit 0;; esac
 
 : "${TERMCMD:?'$TERMCMD must be set (i.e. xterm -e)'}"
 

@@ -15,10 +15,7 @@ this script.
 EOF
 }
 
-case "$1" in
-	--help|-h) help; exit 0;;
-	*) ;;
-esac
+case "$1" in --help|-h) help; exit 0;; esac
 
 export TMPDIR=/dev/shm/
 trap 'trap - EXIT HUP QUIT TERM INT ABRT; rm -f "$tmp" "$tmpcopy"' EXIT HUP QUIT TERM INT ABRT

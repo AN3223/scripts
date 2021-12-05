@@ -31,10 +31,7 @@ The following options are recognized:
 EOF
 }
 
-case "$1" in
-	--help|-h) help; exit 0;;
-	*) ;;
-esac
+case "$1" in --help|-h) help; exit 0;; esac
 
 : "${SNOTIFY_FILE:="$HOME"/.snotify}"
 case "$SNOTIFY_FILE" in -*) SNOTIFY_FILE=./"$SNOTIFY_FILE" ;; esac
