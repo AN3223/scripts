@@ -4,7 +4,7 @@ help() {
 	cat - >&2 <<EOF
 mpvctl - control mpv via sockets
 
-mpvctl [next|previous|play-pause|play|pause|stop]
+mpvctl [next|previous|play-pause|play|pause|stop|{JSON...}]
 
 Requires socat and input-ipc-server=/tmp/mpvctl in your mpv.conf OR use
 my multisocket.lua script from my dotfiles if you want to control
@@ -28,12 +28,13 @@ if ! command -v socat > /dev/null; then
 fi
 
 case "$1" in
+	'{'*)       mpv_send "$1";;
 	next)       mpv_send '{"command": ["playlist-next"]}';;
 	previous)   mpv_send '{"command": ["playlist-prev"]}';;
 	play-pause) mpv_send '{"command": ["cycle", "pause"]}';;
 	play)       mpv_send '{"command": ["play"]}';;
 	pause)      mpv_send '{"command": ["pause"]}';;
-	stop)       mpv_send '{"command": ["stop"]}';;
+	stop)       mpv_send '{"command": ["quit"]}';;
 	--help|-h)  help; exit 0;;
 	*)          help; exit 1;;
 esac
