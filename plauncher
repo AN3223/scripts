@@ -137,7 +137,6 @@ while :; do
 						continue
 					fi
 					;;
-				*) ;;
 			esac
 			cmd="${cmd}${c}"
 			appended=1

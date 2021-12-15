@@ -119,10 +119,7 @@ strip_whitespace() {
 set_trap() { trap 'unset_trap; rm -f "$tmp"' EXIT TERM QUIT HUP INT ABRT; }
 unset_trap() { trap - EXIT TERM QUIT HUP INT ABRT; }
 
-case "$1" in
-	--help|-h) help; exit 0;;
-	*) ;;
-esac
+case "$1" in --help|-h) help; exit 0;; esac
 
 FILENAME=${1:-'-'}
 
@@ -171,10 +168,7 @@ while read -r FILE_MIMETYPE cmd opts; do
 	unset -v copiousoutput needsterminal skip x_url
 
 	# Skip comments and empty lines
-	case "$FILE_MIMETYPE" in
-		''|\#*) continue ;;
-		*) ;;
-	esac
+	case "$FILE_MIMETYPE" in ''|\#*) continue ;; esac
 
 	strip_whitespace FILE_MIMETYPE
 
