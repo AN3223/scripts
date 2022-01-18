@@ -31,8 +31,9 @@ fi
 
 exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"
 while read -r url stream; do
-	if youtube-dl -qs "$url" 2> /dev/null; then
-		printf '%s\n' "${stream:-$url} is live"
-	fi
+	# ideally would use title, but the titles returned by ytdl for twitch 
+	# are not useful here
+	desc=$(youtube-dl -q --get-description "$url" 2> /dev/null) || continue
+	printf '%s\n' "${stream:-$url} is live: $desc"
 done
 
