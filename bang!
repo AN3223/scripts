@@ -93,10 +93,11 @@ https://invidio.xamh.de/
 https://invidious.hub.ne.kr/
 https://invidious.namazso.eu/
 https://invidious.snopyta.org/
-https://vid.mint.lgbt/
 https://vid.puffyan.us/
 https://yewtu.be/
-https://yt.artemislena.eu/'}
+https://yt.artemislena.eu/
+https://invidious.osi.kr/
+https://inv.cthd.icu/'}
 
 #
 # these are sorted alphabetically, please try to maintain this
@@ -141,6 +142,7 @@ case "$bang" in
 !lw|!legwork) link="http://legwork.i2p/yacysearch.html?query=$*" ;;
 !man|!debman) link="https://manpages.debian.org/jump?q=$*" ;;
 !nethack) link="https://nethackwiki.com/wiki/?search=$*" ;;
+!nyaa) link="https://nyaa.si/?f=0&c=0_0&q=$*" ;;
 !phoronix) link="https://www.phoronix.com/scan.php?page=search&q=$*" ;;
 !pm|!postman) link="http://tracker2.postman.i2p/?search=$*" ;;
 !p|!pinterest) link="https://www.pinterest.com/search/pins/?q=$*" ;;
