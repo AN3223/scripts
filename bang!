@@ -90,7 +90,6 @@ https://twitter.censors.us/'}
 # each URL must end with /
 : ${INVIDIOUS_MIRRORS='https://inv.riverside.rocks/
 https://invidio.xamh.de/
-https://invidious.hub.ne.kr/
 https://invidious.namazso.eu/
 https://invidious.snopyta.org/
 https://vid.puffyan.us/
