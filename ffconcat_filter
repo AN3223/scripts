@@ -1,0 +1,166 @@
+#!/bin/sh -e
+
+# XXX add getopts w/ no-video and no-audio options and -h
+# XXX document that tabs, single quotes, and newlines aren't allowed in 
+# filenames, and 1 video stream and 1 audio stream are assumed
+# XXX document transition and atransition
+
+help() {
+	cat - >&2 <<EOF
+ffconcat_filter - convert ffconcat script to shell script
+
+ffconcat_filter in_script out_script [input_args] [output_args] [filters]
+
+This program converts an ffconcat script (see ffmpeg-formats(1)) into a shell
+script invoking ffmpeg using the concat filter. The main reason why you might
+want something like this is for splicing multiple files together with precise
+cuts.
+EOF
+}
+
+NL='
+'
+
+ffconcat() { :; }
+duration() { :; }
+file_packet_metadata() { :; }
+file_packet_meta() { :; }
+option() { :; }
+stream() { :; }
+exact_stream_id() { :; }
+stream_meta() { :; }
+stream_codec() { :; }
+stream_extradata() { :; }
+chapter() { :; }
+
+inpoint() { segment="$segment	in=$1"; }
+outpoint() { segment="$segment	out=$1"; }
+transition() { segment="$segment	transition=$1"; }
+atransition() { segment="$segment	atransition=$1"; }
+
+eval_opts() {
+	for opt in $opts; do
+		case "$opt" in *=*)
+			eval "${opt%%=*}"="${opt#*=}" ;;
+		esac
+	done
+}
+
+offset() {
+	if [ ! "$1" ]; then
+		echo offset requires a duration argument >&2
+		exit 1
+	fi
+
+	duration="$1"
+	offsets="${offsets:=0}"
+	offset=0
+	while IFS='	' read -r f opts; do
+		[ "$f" ] || continue
+		[ "$f	$opts" != "$segment" ] || continue
+
+		unset -v out in
+		eval_opts
+		[ "$out" ] || continue
+		[ "$in" ] || continue
+
+		offset=$(bc -l) <<-EOF
+			$offset + ($out - $in)
+		EOF
+	done <<-EOF
+		$segments
+	EOF
+
+	offset=$(bc -l) <<-EOF
+		$offset - $duration - $offsets
+	EOF
+
+	offsets=$(bc -l) <<-EOF
+		$offsets + $duration
+	EOF
+}
+
+file() {
+	segments="${segments}${NL}${segment}"
+	segment="$1"
+	inputs_count=$((inputs_count+1))
+}
+
+if [ ! -f "$1" ]; then
+	echo input file does not exist >&2
+	exit 1
+elif [ ! "$2" ]; then
+	echo output file not provided >&2
+	exit 1
+elif [ "$1" = "$2" ]; then
+	echo output is the same as input >&2
+	exit 1
+fi
+
+if [ -f "$2" ]; then
+	echo overwrite "$2" y/N?
+	read -r user_input
+	[ "$user_input" = y ] || [ "$user_input" = Y ]
+fi
+
+inputs_count=0
+. "$1"
+segments="${segments}${NL}${segment}"
+
+# this used to be piped into uniq and then the trim filters would reuse 
+# the previous input file number if the previous filename was the same 
+# as the current one, so the generated code could look a little neater, 
+# but that caused ffmpeg to use a ton of memory and make my system crash
+# https://video.stackexchange.com/questions/26132/why-trimming-in-ffmpeg-eats-up-so-much-memory
+while IFS='	' read -r segment opts; do
+	[ "$segment" ] || continue
+	eval_opts
+	inputs="$inputs -ss $in -to $out -i '$segment' \\$NL"
+done <<-EOF
+	$segments
+EOF
+inputs=${inputs%"$NL"}
+
+# generate trim filters
+i=0
+out_i=0
+not_final=1
+while IFS='	' read -r segment opts; do
+	[ "$segment" ] || continue
+
+	unset -v in out
+	transition='concat'
+	atransition='concat=v=0:a=1'
+	eval_opts
+
+	filters="$filters
+[$i:v]trim=$in:$out,setpts=PTS-STARTPTS,settb=AVTB[v$out_i];
+[$i:a]atrim=$in:$out,asetpts=PTS-STARTPTS,asettb=AVTB[a$out_i];"
+
+	if [ "$((i+1))" -eq "$inputs_count" ]; then
+		unset -v not_final
+	fi
+
+	if [ "$i" -ge 1 ]; then
+		out_i=$((out_i+1))
+		filters="$filters
+[v$((out_i-2))][v$((out_i-1))]$transition${not_final:+[v$out_i]};
+[a$((out_i-2))][a$((out_i-1))]$atransition${not_final:+[a$out_i];}"
+	fi
+
+	i=$((i+1))
+	out_i=$((out_i+1))
+done <<-EOF
+	$segments
+EOF
+
+cat > "$2" <<EOF
+#!/bin/sh -e
+
+ffmpeg $3 \$1$inputs
+	-copyts -filter_complex "$filters$5\$3" \\
+	\$2 $4
+EOF
+
+chmod u+x "$2"
+
