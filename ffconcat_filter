@@ -1,6 +1,5 @@
 #!/bin/sh -e
 
-# XXX add getopts w/ no-video and no-audio options and -h
 # XXX document that tabs, single quotes, and newlines aren't allowed in 
 # filenames, and 1 video stream and 1 audio stream are assumed
 # XXX document transition and atransition
@@ -9,12 +8,14 @@ help() {
 	cat - >&2 <<EOF
 ffconcat_filter - convert ffconcat script to shell script
 
-ffconcat_filter in_script out_script [input_args] [output_args] [filters]
+ffconcat_filter [-av] in_script out_script [input_args] [output_args] [filters]
 
 This program converts an ffconcat script (see ffmpeg-formats(1)) into a shell
 script invoking ffmpeg using the concat filter. The main reason why you might
 want something like this is for splicing multiple files together with precise
 cuts.
+
+The -a and -v options disable audio and video respectively.
 EOF
 }
 
@@ -86,6 +87,17 @@ file() {
 	inputs_count=$((inputs_count+1))
 }
 
+VIDEO=1; AUDIO=1;
+while getopts av o; do
+	case "$o" in
+		a) unset -v AUDIO ;;
+		v) unset -v VIDEO ;;
+		h) help; exit 0 ;;
+		*) help; exit 1 ;;
+	esac
+done
+shift $((OPTIND-1))
+
 if [ ! -f "$1" ]; then
 	echo input file does not exist >&2
 	exit 1
@@ -134,8 +146,8 @@ while IFS='	' read -r segment opts; do
 	eval_opts
 
 	filters="$filters
-[$i:v]trim=$in:$out,setpts=PTS-STARTPTS,settb=AVTB[v$out_i];
-[$i:a]atrim=$in:$out,asetpts=PTS-STARTPTS,asettb=AVTB[a$out_i];"
+${VIDEO:+[$i:v]trim=$in:$out,setpts=PTS-STARTPTS,settb=AVTB[v$out_i];}
+${AUDIO:+[$i:a]atrim=$in:$out,asetpts=PTS-STARTPTS,asettb=AVTB[a$out_i];}"
 
 	if [ "$((i+1))" -eq "$inputs_count" ]; then
 		unset -v not_final
@@ -144,9 +156,11 @@ while IFS='	' read -r segment opts; do
 	if [ "$i" -ge 1 ]; then
 		out_i=$((out_i+1))
 		filters="$filters
-[v$((out_i-2))][v$((out_i-1))]$transition${not_final:+[v$out_i]};
-[a$((out_i-2))][a$((out_i-1))]$atransition${not_final:+[a$out_i];}"
+${VIDEO:+[v$((out_i-2))][v$((out_i-1))]$transition${not_final:+[v$out_i]};}
+${AUDIO:+[a$((out_i-2))][a$((out_i-1))]$atransition${not_final:+[a$out_i]};}"
 	fi
+
+	[ "$not_final" ] || filters="${filters%;*}"
 
 	i=$((i+1))
 	out_i=$((out_i+1))
