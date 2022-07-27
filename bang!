@@ -91,11 +91,9 @@ https://twitter.censors.us/'}
 : ${INVIDIOUS_MIRRORS='https://inv.riverside.rocks/
 https://invidio.xamh.de/
 https://invidious.namazso.eu/
-https://invidious.snopyta.org/
 https://vid.puffyan.us/
 https://yewtu.be/
-https://yt.artemislena.eu/
-https://inv.cthd.icu/'}
+https://yt.artemislena.eu/'}
 
 #
 # these are sorted alphabetically, please try to maintain this
