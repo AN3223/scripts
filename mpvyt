@@ -37,6 +37,6 @@ if [ ! "$*" ]; then
 fi
 
 mpv --force-window=immediate --no-resume-playback \
-	${a:+--ytdl-format=bestaudio --video=no --force-window=no } \
+	${a:+--video=no --force-window=no } \
 	ytdl://ytsearch"${n:-5}":"$*"
 
