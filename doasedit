@@ -1,5 +1,6 @@
 #!/bin/sh -e
 
+# Start of localizable text
 help() {
 	cat - >&2 <<EOF
 doasedit - like sudoedit, but for doas
@@ -14,6 +15,9 @@ preserve file attributes. Please exercise CAUTION when modifying AND using
 this script.
 EOF
 }
+MSG_UNCHANGED='File unchanged, exiting...'
+MSG_DONE='Done, changes written'
+# End of localizable text
 
 case "$1" in --help|-h) help; exit 0;; esac
 
@@ -36,10 +40,10 @@ for file; do
 	${EDITOR:-vi} "$tmp"
 
 	if cmp -s "$tmp" "$tmpcopy"; then
-		echo 'File unchanged, exiting...'
+		echo $MSG_UNCHANGED
 	else
 		doas dd if="$tmp" of="$file"
-		echo 'Done, changes written'
+		echo $MSG_DONE
 	fi
 
 	rm "$tmp" "$tmpcopy"
