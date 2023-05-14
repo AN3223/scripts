@@ -31,6 +31,7 @@ fi
 
 exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"
 while read -r url stream; do
+	[ "$url" = "${url#\#}" ] || continue
 	# ideally would use title, but the titles returned by ytdl for twitch 
 	# are not useful here
 	desc=$(youtube-dl -q --get-description "$url" 2> /dev/null) || continue
