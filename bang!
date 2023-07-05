@@ -88,9 +88,7 @@ https://twitter.076.ne.jp/
 https://twitter.censors.us/'}
 
 # each URL must end with /
-: ${INVIDIOUS_MIRRORS='https://inv.riverside.rocks/
-https://invidio.xamh.de/
-https://invidious.namazso.eu/
+: ${INVIDIOUS_MIRRORS='https://invidious.namazso.eu/
 https://vid.puffyan.us/
 https://yewtu.be/
 https://yt.artemislena.eu/'}
