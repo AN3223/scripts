@@ -6,7 +6,7 @@ mpvyt - search for youtube videos and play them with mpv
 
 mpvyt [-n num] query...
 
-Only plays 5 videos by default, which can be increased to any number
+Only plays 10 videos by default, which can be increased to any number 
 with the -n option (-n 0 will play an indefinite amount of videos)
 
 Beware that adding videos to the playlist takes time, so a high (or
@@ -38,5 +38,5 @@ fi
 
 mpv --force-window=immediate --no-resume-playback \
 	${a:+--video=no --force-window=no } \
-	ytdl://ytsearch"${n:-5}":"$*"
+	ytdl://ytsearch"${n:-10}":"$*"
 
