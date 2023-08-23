@@ -11,17 +11,25 @@ This script requires a line-separated list of stream URLs at ~/.streams
 and youtube-dl. Each URL may be followed by an optional nickname for the
 stream (e.g. http://website.com/stream123 stream123).
 
+Duplicate notifications will be suppressed via a state file. The file is 
+located at ~/.streams.state by default (also configurable by the 
+NOTIFYSTREAMS environment variable). You probably want this to be 
+cleared on an interval, see below for an example.
+
 Examples using cron:
-	# 0,30 * * * * means to run every 30 minutes
+	# */10 * * * * means to run every 10 minutes
 
 	# Using my snotify script
-	0,30 * * * * stream_notify | snotify -
+	*/10 * * * * stream_notify | snotify -
 
 	# Using a simple file
-	0,30 * * * * stream_notify > ~/.livestreams
+	*/10 * * * * stream_notify > ~/.livestreams
 
 	# Using nothing, expecting cron to send you mail
-	0,30 * * * * stream_notify
+	*/10 * * * * stream_notify
+
+	# Clear the state file every night at midnight
+	0 0 * * * echo > ~/.streams.state
 EOF
 }
 
@@ -29,12 +37,25 @@ if [ "$*" ]; then
 	help; exit 1;
 fi
 
-exec < "${NOTIFYSTREAMS:-"${HOME:?}/.streams"}"
+file=${NOTIFYSTREAMS:-"${HOME:?}/.streams"}
+
+if [ ! -f "$file.state" ]; then
+	touch "$file.state"
+fi
+
+exec < "$file"
 while read -r url stream; do
 	[ "$url" = "${url#\#}" ] || continue
+
 	# ideally would use title, but the titles returned by ytdl for twitch 
 	# are not useful here
 	desc=$(youtube-dl -q --get-description "$url" 2> /dev/null) || continue
+
+	if grep -Fxqe "$url $desc" "$file.state"; then
+		continue
+	fi
+	echo "$url $desc" >> "$file.state"
+
 	printf '%s\n' "${stream:-$url} is live: $desc"
 done
 
