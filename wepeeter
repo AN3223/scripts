@@ -1,0 +1,53 @@
+#!/bin/sh -e
+#
+# Usage: wepeeter REPEATS FILE...
+#
+# Makes REPEATS-many directories within the current directory containing 
+# symlinks to the specified files. Naming scheme is "wepeet-$n"
+#
+# The main use of this is to give higher weight to preferred files when 
+# passing a directory to a media player, e.g., your favorite songs get 
+# played more often.
+#
+# If REPEATS is 0 then the number of repeats will be chosen 
+# interactively per-file with the option to preview each file with a 
+# user-specified program.
+#
+
+wepeet() {
+	repeats="${1:?}"
+	shift 1
+	test "${1:?}"
+
+	i=1
+	while [ "$i" -le "$repeats" ]; do
+		test -d "wepeet-${i}" || mkdir "wepeet-${i}"
+		for file; do
+			ln -s ../"$file" "wepeet-${i}/"
+		done
+		i=$((i+1))
+	done
+}
+
+if [ "${1:?}" -eq 0 ]; then
+	echo 'Program for previewing files (leave blank to disable previews): ' >&2
+	read -r previewer
+
+	shift 1
+	for file; do
+		unset -v repeats
+		while [ ! "$repeats" ]; do
+			if [ "$previewer" ]; then
+				( set -f; IFS=' '; $previewer "$file"; )
+			fi
+			echo "Number of repeats for $file (leave blank to preview again): " >&2
+			read -r repeats
+		done
+		if [ "$repeats" -gt 0 ]; then
+			wepeet "$repeats" "$file"
+		fi
+	done
+else
+	wepeet "$@"
+fi
+
