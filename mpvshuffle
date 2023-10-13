@@ -1,0 +1,14 @@
+#!/bin/sh -e
+#
+# Usage: mpvshuffle DIRECTORY [ARGS...]
+#
+# More random mpv --shuffle, doesn't get stuck in subdirectories.
+#
+# Assumes none of the filenames contain newline characters.
+#
+
+directory="${1:?}"
+shift 1
+
+find -L "$directory" -type f | mpv --playlist=- --shuffle "$@"
+
