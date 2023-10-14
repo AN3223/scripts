@@ -23,7 +23,7 @@ wepeet() {
 	for dir in "wepeet-"*/; do
 		case "$dir" in "wepeet-*/") break;; esac
 		for file; do
-			rm -f "$dir/$file"
+			rm -f "$dir/$(basename "$file")"
 		done
 		# remove wepeet directories if they're empty
 		rmdir "$dir" 2> /dev/null || :
@@ -48,7 +48,7 @@ if [ "${1:?}" -eq 0 ]; then
 		unset -v repeats
 		while [ ! "$repeats" ]; do
 			if [ "$previewer" ]; then
-				( set -f; IFS=' '; $previewer "$file"; )
+				( set -f; $previewer "$file"; )
 			fi
 			echo "Number of repeats for $file (leave blank to preview again): " >&2
 			read -r repeats
