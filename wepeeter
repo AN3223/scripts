@@ -20,8 +20,8 @@ wepeet() {
 	test "${1:?}"
 
 	# remove existing symlinks for the specified files
-	for dir in "wepeet-"*/; do
-		case "$dir" in "wepeet-*/") break;; esac
+	for dir in wepeets/*/; do
+		case "$dir" in "wepeets/*/") break;; esac
 		for file; do
 			rm -f "$dir/$(basename "$file")"
 		done
@@ -31,9 +31,9 @@ wepeet() {
 
 	i=1
 	while [ "$i" -le "$repeats" ]; do
-		mkdir -p "wepeet-${i}"
+		mkdir -p "wepeets/wepeet-${i}"
 		for file; do
-			ln -sf ../"$file" "wepeet-${i}/"
+			ln -sf ../../"$file" "wepeets/wepeet-${i}/"
 		done
 		i=$((i+1))
 	done
