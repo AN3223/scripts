@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# Usage: wepeeter REPEATS FILE...
+# Usage: wepeeter [-p] REPEATS FILE...
 #
 # Makes REPEATS-many directories within the current directory containing 
 # symlinks to the specified files. Naming scheme is "wepeet-$n"
@@ -13,6 +13,16 @@
 # interactively per-file with the option to preview each file with a 
 # user-specified program.
 #
+
+unset -v previewer
+while getopts 'p:' o; do
+	case "$o" in
+		p) previewer="$OPTARG" ;;
+		#h) help; exit 0 ;;
+		#*) help; exit 1 ;;
+	esac
+done
+shift $((OPTIND-1))
 
 wepeet() {
 	repeats="${1:?}"
@@ -33,15 +43,19 @@ wepeet() {
 	while [ "$i" -le "$repeats" ]; do
 		mkdir -p "wepeets/wepeet-${i}"
 		for file; do
-			ln -sf ../../"$file" "wepeets/wepeet-${i}/"
+			# prefix relative paths with ../../
+			case "$file" in /*) ;; *) file="../../$file" ;; esac
+			ln -sf "$file" "wepeets/wepeet-${i}/"
 		done
 		i=$((i+1))
 	done
 }
 
 if [ "${1:?}" -eq 0 ]; then
-	echo 'Program for previewing files (leave blank to disable previews): ' >&2
-	read -r previewer
+	if [ ! "$previewer" ]; then
+		echo 'Program for previewing files (leave blank to disable previews): ' >&2
+		read -r previewer
+	fi
 
 	shift 1
 	for file; do
