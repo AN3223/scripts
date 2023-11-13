@@ -1,0 +1,44 @@
+#!/bin/sh -e
+
+# XXX support multiple files
+awk -v tty="$(tty)" '
+function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
+
+{ sum += $1; weight[NR] = $1; front[NR] = $2; back[NR] = $3; }
+
+END {
+	if (sum == 0) {
+		print "Sum of weights is zero"
+		exit
+	}
+
+	srand()
+	while (1) {
+		target = rand() * sum
+		isum = 0
+		for (i = 1; i <= NR; i++)
+			if (weight[i] && target <= (isum += weight[i]))
+				break
+
+		printf("%s\n> ", front[i])
+		response = ""; getline response < tty;
+		if (response == "") {
+			updatew = 0
+			break
+		} else if (response == back[i]) {
+			updatew = weight[i]/2 - weight[i]
+			emphatic("Correct!")
+		} else {
+			updatew = weight[i]*2 - weight[i]
+			emphatic("The correct answer was " back[i])
+		}
+		if ((weight[i] + updatew) < 0.1) # minimum weight
+			updatew = 0.1 - weight[i]
+		weight[i] += updatew
+		sum += updatew
+	}
+
+	for (i = 1; i <= NR; i++)
+		print weight[i], front[i], back[i] > FILENAME
+}' "$@"
+
