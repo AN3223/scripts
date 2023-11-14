@@ -36,7 +36,7 @@ function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s)
 
 BEGIN { OFS = FS }
 
-# handle missing weight by setting it to 1 by default
+# handle missing weight by setting it to 1
 $1 != "" && $2 != "" && $3 == "" { $3 = $2; $2 = $1; $1 = 1; }
 
 { sum += weight[NR] = $1; front[NR] = $2; back[NR] = $3; filename[NR] = FILENAME; }
@@ -64,8 +64,13 @@ END {
 			updatew = weight[i] / penalty - weight[i]
 			emphatic("Correct!")
 		} else {
-			updatew = weight[i] * reward - weight[i]
-			emphatic("The correct answer was " back[i])
+			emphatic("The correct answer was " back[i] ". Were you correct? (y/N)")
+			printf("> ")
+			response = ""; getline response < tty;
+			if (response == "y" || response == "Y")
+				updatew = weight[i] / penalty - weight[i]
+			else
+				updatew = weight[i] * reward - weight[i]
 		}
 		if ((weight[i] + updatew) < minweight)
 			updatew = minweight - weight[i]
