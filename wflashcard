@@ -9,7 +9,8 @@ wflashcard [-p penalty] [-r reward] [-m minweight] files...
 The file format is tab separated where the (optional) first field is the 
 weight, the second field is the "front" of the flashcard (shown to the 
 user), and the third field is the "back" of the flashcard (the expected 
-answer). If the weight is omitted then it will be set to 1.0.
+answer). If the weight is omitted then it will be set to 1.0. Blank 
+lines and comment lines are valid.
 
 Incorrect answers will have their weight divided by "penalty", correct 
 answers will have their weight multiplied by "reward", and weights will 
@@ -35,6 +36,8 @@ awk -F "$(printf '\t')" -v tty="$(tty)" -v penalty="$penalty" -v reward="$reward
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
 
 BEGIN { OFS = FS }
+
+/^$/ || /^#/ { next } # skip blank or comment lines
 
 # handle missing weight by setting it to 1
 $1 != "" && $2 != "" && $3 == "" { $3 = $2; $2 = $1; $1 = 1; }
