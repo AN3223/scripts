@@ -1,8 +1,43 @@
 #!/bin/sh -e
 
-# XXX make penalty/reward/minweight customizable
-awk -v tty="$(tty)" '
+help() {
+	cat - >&2 <<EOF
+wflashcard - weighted flashcard viewer
+
+wflashcard [-p penalty] [-r reward] [-m minweight] files...
+
+The file format is tab separated where the (optional) first field is the 
+weight, the second field is the "front" of the flashcard (shown to the 
+user), and the third field is the "back" of the flashcard (the expected 
+answer). If the weight is omitted then it will be set to 1.0.
+
+Incorrect answers will have their weight divided by "penalty", correct 
+answers will have their weight multiplied by "reward", and weights will 
+not be allowed to fall below "minweight".
+EOF
+}
+
+penalty=1.25
+reward=1.25
+minweight=0.1
+while getopts 'hp:r:m:' o; do
+	case "$o" in
+		p) penalty="$OPTARG" ;;
+		r) reward="$OPTARG" ;;
+		m) minweight="$OPTARG" ;;
+		h) help; exit 0 ;;
+		*) help; exit 1 ;;
+	esac
+done
+shift $((OPTIND-1))
+
+awk -F "$(printf '\t')" -v tty="$(tty)" -v penalty="$penalty" -v reward="$reward" -v minweight="$minweight" '
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
+
+BEGIN { OFS = FS }
+
+# handle missing weight by setting it to 1 by default
+$1 != "" && $2 != "" && $3 == "" { $3 = $2; $2 = $1; $1 = 1; }
 
 { sum += weight[NR] = $1; front[NR] = $2; back[NR] = $3; filename[NR] = FILENAME; }
 
@@ -26,14 +61,14 @@ END {
 			updatew = 0
 			break
 		} else if (response == back[i]) {
-			updatew = weight[i]/2 - weight[i]
+			updatew = weight[i] / penalty - weight[i]
 			emphatic("Correct!")
 		} else {
-			updatew = weight[i]*2 - weight[i]
+			updatew = weight[i] * reward - weight[i]
 			emphatic("The correct answer was " back[i])
 		}
-		if ((weight[i] + updatew) < 0.1) # minimum weight
-			updatew = 0.1 - weight[i]
+		if ((weight[i] + updatew) < minweight)
+			updatew = minweight - weight[i]
 		weight[i] += updatew
 		sum += updatew
 	}
