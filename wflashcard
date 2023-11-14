@@ -34,6 +34,7 @@ shift $((OPTIND-1))
 
 awk -F "$(printf '\t')" -v tty="$(tty)" -v penalty="$penalty" -v reward="$reward" -v minweight="$minweight" '
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
+function basename(s) { sub("/$", "", s); gsub(".*/", "", s); return s; }
 
 BEGIN { OFS = FS }
 
@@ -58,7 +59,7 @@ END {
 			if (weight[i] && target <= (isum += weight[i]))
 				break
 
-		printf("%s\n> ", front[i])
+		printf("%s: %s\n> ", basename(filename[i]), front[i])
 		response = ""; getline response < tty;
 		if (response == "") {
 			updatew = 0
