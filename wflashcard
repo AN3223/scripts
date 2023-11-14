@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
-# XXX support multiple files
+# XXX make penalty/reward/minweight customizable
 awk -v tty="$(tty)" '
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
 
-{ sum += $1; weight[NR] = $1; front[NR] = $2; back[NR] = $3; }
+{ sum += weight[NR] = $1; front[NR] = $2; back[NR] = $3; filename[NR] = FILENAME; }
 
 END {
 	if (sum == 0) {
@@ -39,6 +39,6 @@ END {
 	}
 
 	for (i = 1; i <= NR; i++)
-		print weight[i], front[i], back[i] > FILENAME
+		print weight[i], front[i], back[i] > filename[i]
 }' "$@"
 
