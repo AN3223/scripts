@@ -1,10 +1,16 @@
 #!/bin/sh -e
 
+penalty=1.25
+reward=1.25
+quickreward=2.0
+quick=3
+minweight=0.1
+
 help() {
 	cat - >&2 <<EOF
 wflashcard - weighted flashcard viewer
 
-wflashcard [-p penalty] [-r reward] [-m minweight] files...
+wflashcard [-p penalty] [-r reward] [-q quickreward] [-s quick] [-m minweight] files...
 
 The file format is tab separated where the (optional) first field is the 
 weight, the second field is the "front" of the flashcard (shown to the 
@@ -12,19 +18,27 @@ user), and the third field is the "back" of the flashcard (the expected
 answer). If the weight is omitted then it will be set to 1.0. Blank 
 lines and comment lines are valid.
 
-Incorrect answers will have their weight divided by "penalty", correct 
-answers will have their weight multiplied by "reward", and weights will 
-not be allowed to fall below "minweight".
+Incorrect answers will have their weight multiplied by "penalty", 
+correct answers will have their weight divided by "reward", quick & 
+correct (answered in <= "quick" seconds) answers will have their weight 
+divided by "quickreward", and the minimum weight will be capped at 
+"minweight".
+
+The defaults for these options are:
+penalty=$penalty
+reward=$reward
+quickreward=$quickreward
+quick=$quick
+minweight=$minweight
 EOF
 }
 
-penalty=1.25
-reward=1.25
-minweight=0.1
-while getopts 'hp:r:m:' o; do
+while getopts 'hp:r:q:s:m:' o; do
 	case "$o" in
 		p) penalty="$OPTARG" ;;
 		r) reward="$OPTARG" ;;
+		q) quickreward="$OPTARG" ;;
+		s) quick="$OPTARG" ;;
 		m) minweight="$OPTARG" ;;
 		h) help; exit 0 ;;
 		*) help; exit 1 ;;
@@ -32,7 +46,9 @@ while getopts 'hp:r:m:' o; do
 done
 shift $((OPTIND-1))
 
-awk -F "$(printf '\t')" -v tty="$(tty)" -v penalty="$penalty" -v reward="$reward" -v minweight="$minweight" '
+awk -F "$(printf '\t')" -v tty="$(tty)" \
+	-v penalty="$penalty" -v reward="$reward" -v quickreward="$quickreward" \
+	-v quick="$quick" -v minweight="$minweight" '
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
 function basename(s) { sub("/$", "", s); gsub(".*/", "", s); return s; }
 
@@ -60,21 +76,26 @@ END {
 				break
 
 		printf("%s: %s\n> ", basename(filename[i]), front[i])
+		srand(); time = srand()
 		response = ""; getline response < tty;
+		srand(); response_time = srand() - time
 		if (response == "") {
 			updatew = 0
 			break
+		} else if (response == back[i] && response_time <= quick) {
+			updatew = weight[i] / quickreward - weight[i]
+			emphatic("Correct!")
 		} else if (response == back[i]) {
-			updatew = weight[i] / penalty - weight[i]
+			updatew = weight[i] / reward - weight[i]
 			emphatic("Correct!")
 		} else {
 			emphatic("The correct answer was " back[i] ". Were you correct? (y/N)")
 			printf("> ")
 			response = ""; getline response < tty;
 			if (response == "y" || response == "Y")
-				updatew = weight[i] / penalty - weight[i]
+				updatew = weight[i] / reward - weight[i]
 			else
-				updatew = weight[i] * reward - weight[i]
+				updatew = weight[i] * penalty - weight[i]
 		}
 		if ((weight[i] + updatew) < minweight)
 			updatew = minweight - weight[i]
