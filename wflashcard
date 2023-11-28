@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
-penalty=1.25
-reward=1.25
-quickreward=2.0
+penalty=1.75
+reward=1.75
+quickreward=4.0
 quick=3
-minweight=0.1
+minweight=0.01
 
 help() {
 	cat - >&2 <<EOF
