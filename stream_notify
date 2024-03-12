@@ -6,15 +6,14 @@ stream_notify - show streams that are currently live
 
 stream_notify
 
-This script requires a line-separated list of stream URLs at ~/.streams
+This script requires a line-by-line list of stream URLs at ~/.streams
 (or another file specified by the NOTIFYSTREAMS environment variable)
 and youtube-dl. Each URL may be followed by an optional nickname for the
 stream (e.g. http://website.com/stream123 stream123).
 
 Duplicate notifications will be suppressed via a state file. The file is 
 located at ~/.streams.state by default (also configurable by the 
-NOTIFYSTREAMS environment variable). You probably want this to be 
-cleared on an interval, see below for an example.
+NOTIFYSTREAMS environment variable).
 
 Examples using cron:
 	# */10 * * * * means to run every 10 minutes
@@ -27,9 +26,6 @@ Examples using cron:
 
 	# Using nothing, expecting cron to send you mail
 	*/10 * * * * stream_notify
-
-	# Clear the state file every night at midnight
-	0 0 * * * echo > ~/.streams.state
 EOF
 }
 
@@ -43,6 +39,8 @@ if [ ! -f "$file.state" ]; then
 	touch "$file.state"
 fi
 
+unset -v newstate
+
 exec < "$file"
 while read -r url stream; do
 	[ "$url" = "${url#\#}" ] || continue
@@ -51,11 +49,14 @@ while read -r url stream; do
 	# are not useful here
 	desc=$(youtube-dl -q --get-description "$url" 2> /dev/null) || continue
 
+	newstate="$newstate
+$url $desc"
 	if grep -Fxqe "$url $desc" "$file.state"; then
 		continue
 	fi
-	echo "$url $desc" >> "$file.state"
 
 	printf '%s\n' "${stream:-$url} is live: $desc"
 done
+
+printf '%s\n' "$newstate" > "$file.state"
 
