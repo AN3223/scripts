@@ -1,9 +1,9 @@
 #!/bin/sh -e
 #
-# Usage: wepeeter [-p] REPEATS FILE...
+# Usage: wepeeter [-pc] REPEATS FILE...
 #
-# Makes REPEATS-many directories within the current directory containing 
-# symlinks to the specified files. Naming scheme is "wepeet-$n"
+# Makes REPEATS-many directories within a subdirectory (named weepeets) 
+# of the current directory containing symlinks to the specified files.
 #
 # The main use of this is to give higher weight to preferred files when 
 # passing a directory to a media player, e.g., your favorite songs get 
@@ -11,13 +11,19 @@
 #
 # If REPEATS is 0 then the number of repeats will be chosen 
 # interactively per-file with the option to preview each file with a 
-# user-specified program.
+# user-specified program. The -p argument can be used to specify the 
+# previewer program non-interactively.
+#
+# The -c argument runs wepeeter on each non-hidden file newer than the 
+# wepeets directory, then updates the mtime on the wepeets directory if 
+# successful.
 #
 
-unset -v previewer
-while getopts 'p:' o; do
+unset -v previewer since_change
+while getopts 'cp:' o; do
 	case "$o" in
 		p) previewer="$OPTARG" ;;
+		c) since_change=1 ;;
 		#h) help; exit 0 ;;
 		#*) help; exit 1 ;;
 	esac
@@ -50,6 +56,17 @@ wepeet() {
 		i=$((i+1))
 	done
 }
+
+if [ "$since_change" ]; then
+	if [ ! -d ./wepeets/ ]; then
+		echo "No wepeets directory found despite -c (run wepeeter normally first)" >&2
+		exit 1
+	fi
+
+	find . -type f -newer ./wepeets/ ! -path '*/.*' -exec $0 ${previewer:+-p $previewer} 0 {} +
+	touch ./wepeets/
+	exit
+fi
 
 if [ "${1:?}" -eq 0 ]; then
 	if [ ! "$previewer" ]; then
