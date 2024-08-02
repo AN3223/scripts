@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# Usage: wepeeter [-pc] REPEATS FILE...
+# Usage: wepeeter [-cdps] REPEATS FILE...
 #
 # Makes REPEATS-many directories within a subdirectory (named weepeets) 
 # of the current directory containing symlinks to the specified files.
@@ -18,17 +18,38 @@
 # wepeets directory, then updates the mtime on the wepeets directory if 
 # successful.
 #
+# The -p argument allows a previewer to be specified, e.g., -p mpv
+#
+# The -s argument shows broken symlinks.
+#
+# The -d argument deletes broken symlinks.
+#
 
-unset -v previewer since_change
-while getopts 'cp:' o; do
+unset -v since_change clean_dead previewer show_dead
+while getopts 'cdp:s' o; do
 	case "$o" in
-		p) previewer="$OPTARG" ;;
 		c) since_change=1 ;;
+		d) clean_dead=1 ;;
+		p) previewer="$OPTARG" ;;
+		s) show_dead=1 ;;
 		#h) help; exit 0 ;;
 		#*) help; exit 1 ;;
 	esac
 done
 shift $((OPTIND-1))
+
+if [ "$clean_dead" ] || [ "$show_dead" ]; then
+	for l in wepeets/*/*; do
+		if [ -L "$l" ] && ! [ -f "$(realpath "$l" 2>/dev/null)" ]; then
+			if [ "$clean_dead" ]; then
+				rm "$l"
+			else
+				printf '%s\n' "$l"
+			fi
+		fi
+	done
+	exit 0
+fi
 
 wepeet() {
 	repeats="${1:?}"
