@@ -36,51 +36,67 @@ case "$1" in --help|-h) help; exit 0;; esac
 : "${SNOTIFY_FILE:="$HOME"/.snotify}"
 case "$SNOTIFY_FILE" in -*) SNOTIFY_FILE=./"$SNOTIFY_FILE" ;; esac
 
-# read stdin before grabbing lock, since reading stdin may take a while
-if [ "$1" = '-' ]; then
-	STDIN=$(cat -)
-	[ "$STDIN" ] || exit 1
+LOCK=$SNOTIFY_FILE.lock
+
+if command -v flock > /dev/null 2>&1; then
+	has_flock=1
+else
+	unset -v has_flock
 fi
 
-# try to use a good lock implementation, fall back to something dirtier
-LOCK=$SNOTIFY_FILE.lock
-if command -v flock > /dev/null 2>&1; then
-	exec 9> "$LOCK"
-	flock 9
-else
-	while ! mkdir "$LOCK"; do
-		sleep 0.1
-	done
+lock() {
+	# tries a good lock implementation, falls back to something dirtier
+	if [ "$has_flock" ]; then
+		exec 9> "$LOCK"
+		flock 9
+	else
+		while ! mkdir "$LOCK"; do
+			sleep 0.1
+		done
+	fi
+}
+
+unlock() {
+	if [ "$has_flock" ]; then
+		flock -u 9
+	else
+		rmdir "$LOCK"
+	fi
+}
+
+if [ ! "$has_flock" ]; then
 	trap 'trap - EXIT QUIT HUP INT TERM ABRT; rmdir "$LOCK"' EXIT QUIT HUP INT TERM ABRT
 fi
 
 if [ "$*" ]; then
 	case "$1" in
 		-n)
+			lock
 			shift 1
 			# avoid recording duplicate messages
-			if grep -Fxqe "$*" "$SNOTIFY_FILE"; then
-				exit 0
+			if ! grep -Fxqe "$*" "$SNOTIFY_FILE"; then
+				printf '%s\n' "$*" >> "$SNOTIFY_FILE"
 			fi
-
-			printf '%s\n' "$*" >> "$SNOTIFY_FILE";
 			;;
 		-d)
+			lock
 			new=$(head -n -1 "$SNOTIFY_FILE")
 			cat > "$SNOTIFY_FILE" <<-EOF
 				$new
 			EOF
 			;;
 		-r)
-			rm "$SNOTIFY_FILE"
+			rm "$SNOTIFY_FILE" "$LOCK"
 			;;
 		-)
-			# avoid recording duplicate messages
-			printf '%s\n' "$STDIN" | while read -r line; do
+			while read -r line; do
+				lock
+				# avoid recording duplicate messages
 				if grep -Fxqe "$line" "$SNOTIFY_FILE"; then
 					continue
 				fi
 				printf '%s\n' "$line" >> "$SNOTIFY_FILE"
+				unlock
 			done
 			;;
 		*)
@@ -89,6 +105,7 @@ if [ "$*" ]; then
 			;;
 	esac
 else
+	# shouldn't be necessary to lock here
 	: >> "$SNOTIFY_FILE"
 	tail -n 1 "$SNOTIFY_FILE"
 fi
