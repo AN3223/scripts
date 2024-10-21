@@ -1,16 +1,17 @@
 #!/bin/sh -e
 
-penalty=1.75
-reward=1.75
-quickreward=4.0
-quick=3
 minweight=0.01
+penalty=1.75
+quick=3
+quickreward=4.0
+review=0
+reward=1.75
 
 help() {
 	cat - >&2 <<EOF
 wflashcard - weighted flashcard viewer
 
-wflashcard [-p penalty] [-r reward] [-q quickreward] [-s quick] [-m minweight] files...
+wflashcard [-v] [-p penalty] [-r reward] [-q quickreward] [-s quick] [-m minweight] files...
 
 The file format is tab separated where the (optional) first field is the 
 weight, the second field is the "front" of the flashcard (shown to the 
@@ -24,6 +25,9 @@ correct (answered in <= "quick" seconds) answers will have their weight
 divided by "quickreward", and the minimum weight will be capped at 
 "minweight".
 
+The -v flag enables review mode, which shows the front and back of each 
+flashcard and ignores answers.
+
 The defaults for these options are:
 penalty=$penalty
 reward=$reward
@@ -33,13 +37,14 @@ minweight=$minweight
 EOF
 }
 
-while getopts 'hp:r:q:s:m:' o; do
+while getopts 'm:p:q:r:s:vh' o; do
 	case "$o" in
-		p) penalty="$OPTARG" ;;
-		r) reward="$OPTARG" ;;
-		q) quickreward="$OPTARG" ;;
-		s) quick="$OPTARG" ;;
 		m) minweight="$OPTARG" ;;
+		p) penalty="$OPTARG" ;;
+		q) quickreward="$OPTARG" ;;
+		r) reward="$OPTARG" ;;
+		s) quick="$OPTARG" ;;
+		v) review=1 ;;
 		h) help; exit 0 ;;
 		*) help; exit 1 ;;
 	esac
@@ -47,8 +52,13 @@ done
 shift $((OPTIND-1))
 
 awk -F "$(printf '\t')" -v tty="$(tty)" \
-	-v penalty="$penalty" -v reward="$reward" -v quickreward="$quickreward" \
-	-v quick="$quick" -v minweight="$minweight" '
+	-v minweight="$minweight" \
+	-v penalty="$penalty" \
+	-v quick="$quick" \
+	-v quickreward="$quickreward" \
+	-v review="$review" \
+	-v reward="$reward" \
+'
 function emphatic(s) { printf("\n----------------\n%s\n----------------\n\n", s) }
 function basename(s) { sub("/$", "", s); gsub(".*/", "", s); return s; }
 
@@ -75,11 +85,17 @@ END {
 			if (weight[i] && target <= (isum += weight[i]))
 				break
 
-		printf("%s: %s\n> ", basename(filename[i]), front[i])
+		if (review)
+			printf("%s: %s\t%s\n> ", basename(filename[i]), front[i], back[i])
+		else
+			printf("%s: %s\n> ", basename(filename[i]), front[i])
 		srand(); time = srand()
 		response = ""; getline response < tty;
 		srand(); response_time = srand() - time
-		if (response == "") {
+		if (review) {
+			updatew = 0
+			continue
+		} else if (response == "") {
 			updatew = 0
 			break
 		} else if (response == back[i] && response_time <= quick) {
