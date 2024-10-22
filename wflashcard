@@ -93,29 +93,30 @@ END {
 		response = ""; getline response < tty;
 		srand(); response_time = srand() - time
 		if (review) {
-			updatew = 0
+			new_weight = weight[i]
 			continue
 		} else if (response == "") {
-			updatew = 0
+			new_weight = weight[i]
 			break
 		} else if (response == back[i] && response_time <= quick) {
-			updatew = weight[i] / quickreward - weight[i]
+			new_weight = weight[i] / quickreward
 			emphatic("Correct!")
 		} else if (response == back[i]) {
-			updatew = weight[i] / reward - weight[i]
+			new_weight = weight[i] / reward
 			emphatic("Correct!")
 		} else {
 			emphatic("The correct answer was " back[i] ". Were you correct? (y/N)")
 			printf("> ")
 			response = ""; getline response < tty;
 			if (response == "y" || response == "Y")
-				updatew = weight[i] / reward - weight[i]
+				new_weight = weight[i] / reward
 			else
-				updatew = weight[i] * penalty - weight[i]
+				new_weight = weight[i] * penalty
 		}
-		if ((weight[i] + updatew) < minweight)
-			updatew = minweight - weight[i]
-		weight[i] += updatew
+		if (new_weight < minweight)
+			new_weight = minweight
+		updatew = new_weight - weight[i]
+		weight[i] = new_weight
 		sum += updatew
 	}
 
