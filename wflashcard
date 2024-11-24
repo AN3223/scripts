@@ -64,7 +64,8 @@ function basename(s) { sub("/$", "", s); gsub(".*/", "", s); return s; }
 
 BEGIN { OFS = FS }
 
-/^$/ || /^#/ { next } # skip blank or comment lines
+# skip blank or comment lines
+/^$/ || /^#/ { rawline[NR] = $0; filename[NR] = FILENAME; next }
 
 # handle missing weight by setting it to 1
 $1 != "" && $2 != "" && $3 == "" { $3 = $2; $2 = $1; $1 = 1; }
@@ -126,7 +127,11 @@ END {
 		sum += updatew
 	}
 
-	for (i = 1; i <= NR; i++)
-		print weight[i], front[i], back[i] > filename[i]
+	for (i = 1; i <= NR; i++) {
+		if (weight[i])
+			print weight[i], front[i], back[i] > filename[i]
+		else
+			print rawline[i] > filename[i]
+	}
 }' "$@"
 
