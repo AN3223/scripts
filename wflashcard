@@ -22,8 +22,7 @@ lines and comment lines are valid.
 Incorrect answers will have their weight multiplied by "penalty", 
 correct answers will have their weight divided by "reward", quick & 
 correct (answered in <= "quick" seconds) answers will have their weight 
-divided by "quickreward", and the minimum weight will be capped at 
-"minweight".
+divided by "quickreward", and the minimum weight will be "minweight".
 
 The -v flag enables review mode, which shows the front and back of each 
 flashcard and ignores answers.
@@ -64,17 +63,22 @@ function basename(s) { sub("/$", "", s); gsub(".*/", "", s); return s; }
 
 BEGIN { OFS = FS }
 
-# skip blank or comment lines
+# skip comments and blank lines
 /^$/ || /^#/ { rawline[NR] = $0; filename[NR] = FILENAME; next }
 
-# handle missing weight by setting it to 1
-$1 != "" && $2 != "" && $3 == "" { $3 = $2; $2 = $1; $1 = 1; }
+$1 == "" || $2 == "" {
+	print "Invalid flashcard on line " NR > "/dev/stderr"
+	rawline[NR] = $0; filename[NR] = FILENAME
+	next
+}
+
+$3 == "" { $3 = $2; $2 = $1; $1 = 1; } # set missing weight to 1
 
 { sum += weight[NR] = $1; front[NR] = $2; back[NR] = $3; filename[NR] = FILENAME; }
 
 END {
 	if (sum == 0) {
-		print "Sum of weights is zero"
+		print "Sum of weights is zero" > "/dev/stderr"
 		exit
 	}
 
