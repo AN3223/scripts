@@ -65,20 +65,13 @@ offset() {
 		[ "$out" ] || continue
 		[ "$in" ] || continue
 
-		offset=$(bc -l) <<-EOF
-			$offset + ($out - $in)
-		EOF
+		offset=$(printf '%s\n' "$offset + ($out - $in)" | bc -l)
 	done <<-EOF
 		$segments
 	EOF
 
-	offset=$(bc -l) <<-EOF
-		$offset - $duration - $offsets
-	EOF
-
-	offsets=$(bc -l) <<-EOF
-		$offsets + $duration
-	EOF
+	offset=$(printf '%s\n' "$offset - $duration - $offsets" | bc -l)
+	offsets=$(printf '%s\n' "$offsets + $duration" | bc -l)
 }
 
 file() {

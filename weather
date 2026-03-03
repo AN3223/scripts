@@ -13,9 +13,7 @@
 #
 
 html=$(curl -LSsf --retry 10 "https://forecast.weather.gov/MapClick.php?$1&FcstType=text&TextType=1")
-txt=$(w3m -T text/html -dump) <<-EOF
-	$html
-EOF
+txt=$(printf '%s\n' "$html" | w3m -T text/html -dump)
 
 shift 1
 ${SENDMAIL:-mail} -s "Weather $(date '+%A, %B %d')" -- "$@" <<-EOF

@@ -109,9 +109,32 @@ hidden_grid=$(awk -v gs="$gridsize" '
 
 		END {
 			# build up numbers around the mines, mark mines with an X
-			for (y = 1; y <= gs; y++)
-				for (x = 1; x <= gs; x++)
-					finalgrid[x,y] = grid[x,y] == 1 ? "X" : grid[x-1,y-1]+grid[x,y-1]+grid[x+1,y-1]+grid[x-1,y]+grid[x+1,y]+grid[x-1,y+1]+grid[x,y+1]+grid[x+1,y+1]
+			for (y = 1; y <= gs; y++) {
+				for (x = 1; x <= gs; x++) {
+					if (grid[x,y] == 1) {
+						finalgrid[x,y] = "X"
+						continue
+					}
+
+					finalgrid[x,y] = 0
+					if (x > 1)
+						finalgrid[x,y] += grid[x-1,y]
+					if (y > 1)
+						finalgrid[x,y] += grid[x,y-1]
+					if (x > 1 && y > 1)
+						finalgrid[x,y] += grid[x-1,y-1]
+					if (x < gs)
+						finalgrid[x,y] += grid[x+1,y]
+					if (y < gs)
+						finalgrid[x,y] += grid[x,y+1]
+					if (x < gs && y < gs)
+						finalgrid[x,y] += grid[x+1,y+1]
+					if (x > 1 && y < gs)
+						finalgrid[x,y] += grid[x-1,y+1]
+					if (y > 1 && x < gs)
+						finalgrid[x,y] += grid[x+1,y-1]
+				}
+			}
 
 			# print result
 			for (y = 1; y <= gs; y++) {
@@ -123,21 +146,15 @@ hidden_grid=$(awk -v gs="$gridsize" '
 	' /dev/null
 )
 
-bombs=$(tr -d ' 0-8\n' | wc -c) <<-EOF
-	$hidden_grid
-EOF
+no_bombs=$(printf '%s\n' "$hidden_grid" | tr -d ' 0-8\n' | wc -c)
 
 alphabet_multiline=$(printf '%s\n' A B C D E F G H I \
 	J K L M N O P Q R S T U V W X Y Z | head -n "$gridsize")
-alphabet=$(tr -d '\n') <<-EOF
-	$alphabet_multiline
-EOF
+alphabet=$(printf '%s\n' "$alphabet_multiline" | tr -d '\n')
 
 unset -v gameover
 while :; do
-	unknown_cells=$(tr -d ' 0-8\n' | wc -c) <<-EOF
-		$known_grid
-	EOF
+	unknown_cells=$(printf '%s\n' "$known_grid" | tr -d ' 0-8\n' | wc -c)
 
 	echo "   $alphabet"
 	awk '{ gsub(" ", "", $0); printf("%02d|%s|%02d\n", NR, $0, NR) }' <<-EOF
@@ -145,7 +162,7 @@ while :; do
 	EOF
 	echo "   $alphabet"
 
-	if [ "$unknown_cells" -eq "$bombs" ]; then
+	if [ "$unknown_cells" -eq "$no_bombs" ]; then
 		echo 'You win!' >&2; exit 0;
 	elif [ "$gameover" ]; then
 		echo 'You lose!' >&2; exit 2;
@@ -164,9 +181,7 @@ while :; do
 		*) continue ;; # retry in case of invalid input
 	esac
 
-	x=$(awk -v x="$x" '$0 == toupper(x) { print NR }') <<-EOF
-		$alphabet_multiline
-	EOF
+	x=$(printf '%s\n' "$alphabet_multiline" | awk -v x="$x" '$0 == toupper(x) { print NR }')
 
 	in_bounds "$x" "$y" || continue
 

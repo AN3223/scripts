@@ -71,9 +71,7 @@ stty -icanon -echo -nl
 unset -v cmd cursor list_length appended
 while :; do
 	if [ "$cursor" ]; then
-		cmd=$(sed -n "${cursor}p") <<-EOF
-			$list
-		EOF
+		cmd=$(printf '%s\n' "$list" | sed -n "${cursor}p")
 
 		# handle the command context (background/terminal) number if available
 		case "$cmd" in [0-9]' '*)
@@ -86,9 +84,7 @@ while :; do
 		printf '%s' "$c"
 	else
 		list=$(grep -Fie "$cmd" < "$PLAUNCHER_HISTORY" || :)
-		visual_list=$(sed "s/$/$EL/g ; s/^[0-9] //g") <<-EOF
-			$list
-		EOF
+		visual_list=$(printf '%s\n' "$list" | sed "s/$/$EL/g ; s/^[0-9] //g")
 
 		printf "$CP%s" "${list:+${visual_list}${NL}}" >&2
 		printf "\r> %s$ED" "$cmd" >&2
@@ -102,9 +98,7 @@ while :; do
 					cursor=$((cursor - 1))
 				fi
 			else
-				list_length=$(wc -l) <<-EOF
-					$list
-				EOF
+				list_length=$(printf '%s\n' "$list" | wc -l)
 				cursor="$list_length"
 			fi
 			;;
@@ -116,9 +110,7 @@ while :; do
 			fi
 			;;
 		"$KEY_CTRL_W") # delete last word from line
-			cmd=$(sed 's/[^ ]*[ ]*$//') <<-EOF
-				$cmd
-			EOF
+			cmd=$(printf '%s\n' "$cmd" | sed 's/[^ ]*[ ]*$//')
 			unset -v cursor list_length appended
 			;;
 		"$KEY_BACKSPACE") cmd=${cmd%?}; unset -v cursor list_length appended ;;
@@ -130,9 +122,7 @@ while :; do
 			# case trick saves a lot of time, noticeable when pasting
 			case "$c" in
 				[!' '-'~'])
-					cval=$(od -A n -N 1 -t u1) <<-EOF
-						$c
-					EOF
+					cval=$(printf '%s\n' "$c" | od -A n -N 1 -t u1)
 					if [ "$cval" -lt 32 ]; then
 						continue
 					fi
